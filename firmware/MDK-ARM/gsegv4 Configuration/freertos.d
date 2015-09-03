@@ -1,0 +1,11 @@
+gsegv4 configuration\freertos.o: ..\Src\freertos.c
+gsegv4 configuration\freertos.o: ..\Middlewares\Third_Party\FreeRTOS\Source\include\FreeRTOS.h
+gsegv4 configuration\freertos.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
+gsegv4 configuration\freertos.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
+gsegv4 configuration\freertos.o: ..\Inc\FreeRTOSConfig.h
+gsegv4 configuration\freertos.o: ..\Middlewares\Third_Party\FreeRTOS\Source\include\projdefs.h
+gsegv4 configuration\freertos.o: ..\Middlewares\Third_Party\FreeRTOS\Source\include\portable.h
+gsegv4 configuration\freertos.o: ..\Middlewares\Third_Party\FreeRTOS\Source\portable\RVDS\ARM_CM4F\portmacro.h
+gsegv4 configuration\freertos.o: ..\Middlewares\Third_Party\FreeRTOS\Source\include\mpu_wrappers.h
+gsegv4 configuration\freertos.o: ..\Middlewares\Third_Party\FreeRTOS\Source\include\task.h
+gsegv4 configuration\freertos.o: ..\Middlewares\Third_Party\FreeRTOS\Source\include\list.h

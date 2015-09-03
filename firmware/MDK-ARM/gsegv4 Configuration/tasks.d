@@ -1,0 +1,15 @@
+gsegv4 configuration\tasks.o: ..\Middlewares\Third_Party\FreeRTOS\Source\tasks.c
+gsegv4 configuration\tasks.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
+gsegv4 configuration\tasks.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
+gsegv4 configuration\tasks.o: ..\Middlewares\Third_Party\FreeRTOS\Source\include\FreeRTOS.h
+gsegv4 configuration\tasks.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
+gsegv4 configuration\tasks.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
+gsegv4 configuration\tasks.o: ..\Inc\FreeRTOSConfig.h
+gsegv4 configuration\tasks.o: ..\Middlewares\Third_Party\FreeRTOS\Source\include\projdefs.h
+gsegv4 configuration\tasks.o: ..\Middlewares\Third_Party\FreeRTOS\Source\include\portable.h
+gsegv4 configuration\tasks.o: ..\Middlewares\Third_Party\FreeRTOS\Source\portable\RVDS\ARM_CM4F\portmacro.h
+gsegv4 configuration\tasks.o: ..\Middlewares\Third_Party\FreeRTOS\Source\include\mpu_wrappers.h
+gsegv4 configuration\tasks.o: ..\Middlewares\Third_Party\FreeRTOS\Source\include\task.h
+gsegv4 configuration\tasks.o: ..\Middlewares\Third_Party\FreeRTOS\Source\include\list.h
+gsegv4 configuration\tasks.o: ..\Middlewares\Third_Party\FreeRTOS\Source\include\timers.h
+gsegv4 configuration\tasks.o: ..\Middlewares\Third_Party\FreeRTOS\Source\include\StackMacros.h

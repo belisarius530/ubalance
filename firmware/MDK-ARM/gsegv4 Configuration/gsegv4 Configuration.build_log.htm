@@ -1,0 +1,59 @@
+<html>
+<body>
+<pre>
+<h1>µVision Build Log</h1>
+<h2>Tool Versions:</h2>
+IDE-Version: µVision V5.13.0.0
+Copyright (C) 2014 ARM Ltd and ARM Germany GmbH. All rights reserved.
+License Information: Jonathan Fish, California Polytechnic State University, LIC=----
+ 
+Tool Versions:
+Toolchain:       MDK-Lite  Version: 5.13.0.0
+Toolchain Path:  C:\Keil_v5\ARM\ARMCC\Bin
+C Compiler:      Armcc.exe V5.05 update 1 (build 106)
+Assembler:       Armasm.exe V5.05 update 1 (build 106)
+Linker/Locator:  ArmLink.exe V5.05 update 1 (build 106)
+Library Manager: ArmAr.exe V5.05 update 1 (build 106)
+Hex Converter:   FromElf.exe V5.05 update 1 (build 106)
+CPU DLL:         SARMCM3.DLL V5.13.0.0
+Dialog DLL:      DCM.DLL V1.13.1.0
+Target DLL:      STLink\ST-LINKIII-KEIL_SWO.dll V2.0.14.0_KEIL
+Dialog DLL:      TCM.DLL V1.14.4.0
+ 
+<h2>Project:</h2>
+E:\SrProject\gsegv6\gsegv4\MDK-ARM\gsegv4.uvprojx
+Project File Date:  08/26/2015
+
+<h2>Output:</h2>
+Build target 'gsegv4 Configuration'
+compiling stm32f4xx_it.c...
+..\Inc\task_master.h(15): warning:  #1-D: last line of file ends without a newline
+  uint8_t Compute_Software_State(uint8_t current_state);
+..\Inc\shares.h(109): warning:  #1-D: last line of file ends without a newline
+  #endif
+..\Src\stm32f4xx_it.c: 2 warnings, 0 errors
+compiling main.c...
+..\Inc\shares.h(109): warning:  #1-D: last line of file ends without a newline
+  #endif
+..\Inc\task_master.h(15): warning:  #1-D: last line of file ends without a newline
+  uint8_t Compute_Software_State(uint8_t current_state);
+..\Inc\task_control.h(40): warning:  #1-D: last line of file ends without a newline
+  filter_fxn filter_logic(uint8_t software_state, filter_fxn user_filter_select);
+..\Inc\task_test.h(1): warning:  #1-D: last line of file ends without a newline
+  void task_test(void* pvParameters);
+..\Src\main.c: 4 warnings, 0 errors
+compiling freertos.c...
+linking...
+gsegv4 Configuration\gsegv4 Configuration.axf: Warning: L6304W: Duplicate input file gsegv4 configuration\freertos_1.o ignored.
+Program Size: Code=24904 RO-data=1056 RW-data=384 ZI-data=17176  
+Finished: 0 information, 1 warning and 0 error messages.
+"gsegv4 Configuration\gsegv4 Configuration.axf" - 0 Error(s), 7 Warning(s).
+
+<h2>Collection of Component include folders:</h2>
+  E:\SrProject\gsegv6\gsegv4\MDK-ARM\RTE
+  C:\Keil_v5\ARM\PACK\Keil\STM32F4xx_DFP\2.3.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include
+
+<h2>Collection of Component Files used:</h2>
+</pre>
+</body>
+</html>
