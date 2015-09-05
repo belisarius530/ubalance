@@ -21,36 +21,103 @@ Target DLL:      STLink\ST-LINKIII-KEIL_SWO.dll V2.0.14.0_KEIL
 Dialog DLL:      TCM.DLL V1.14.4.0
  
 <h2>Project:</h2>
-E:\SrProject\gsegv6\gsegv4\MDK-ARM\gsegv4.uvprojx
+C:\Users\jjfish\Documents\gitsandbox\ubalance\firmware\MDK-ARM\gsegv4.uvprojx
 Project File Date:  08/26/2015
 
 <h2>Output:</h2>
 Build target 'gsegv4 Configuration'
 compiling stm32f4xx_it.c...
-..\Inc\task_master.h(15): warning:  #1-D: last line of file ends without a newline
-  uint8_t Compute_Software_State(uint8_t current_state);
 ..\Inc\shares.h(109): warning:  #1-D: last line of file ends without a newline
   #endif
-..\Src\stm32f4xx_it.c: 2 warnings, 0 errors
+..\Src\stm32f4xx_it.c: 1 warning, 0 errors
 compiling main.c...
 ..\Inc\shares.h(109): warning:  #1-D: last line of file ends without a newline
   #endif
-..\Inc\task_master.h(15): warning:  #1-D: last line of file ends without a newline
-  uint8_t Compute_Software_State(uint8_t current_state);
 ..\Inc\task_control.h(40): warning:  #1-D: last line of file ends without a newline
   filter_fxn filter_logic(uint8_t software_state, filter_fxn user_filter_select);
 ..\Inc\task_test.h(1): warning:  #1-D: last line of file ends without a newline
   void task_test(void* pvParameters);
-..\Src\main.c: 4 warnings, 0 errors
+..\Src\main.c: 3 warnings, 0 errors
+compiling task_master.c...
+..\Inc\shares.h(109): warning:  #1-D: last line of file ends without a newline
+  #endif
+..\Inc\matrix.h(9): warning:  #1-D: last line of file ends without a newline
+  float det_mtrx_2x2(float *m);
+..\Src\task_master.c(61): warning:  #167-D: argument of type "volatile uint8_t *" is incompatible with parameter of type "uint8_t *"
+      HAL_UART_Receive_IT(&huart1, packet_hdr, 1);
+..\Src\task_master.c(67): warning:  #188-D: enumerated type mixed with another type
+                current_state_SHARED = Compute_Software_State(current_state_SHARED);
+..\Src\task_master.c(57): warning:  #177-D: variable "receive_buffer" was declared but never referenced
+      uint8_t receive_buffer[65];
+..\Src\task_master.c(59): warning:  #177-D: variable "next_state" was declared but never referenced
+      software_state next_state = reset;
+..\Src\task_master.c(62): warning:  #550-D: variable "uxHighWaterMark" was set but never used
+      UBaseType_t uxHighWaterMark;
+..\Src\task_master.c(99): warning:  #167-D: argument of type "volatile uint8_t *" is incompatible with parameter of type "uint8_t *"
+                HAL_UART_Receive_IT(hUART, packet_payload, payload_length_SHARED);
+..\Src\task_master.c(106): warning:  #167-D: argument of type "volatile uint8_t *" is incompatible with parameter of type "uint8_t *"
+                HAL_UART_Receive_IT(hUART, packet_hdr, 1); // start looking for the next valid packet header
+..\Src\task_master.c(115): warning:  #167-D: argument of type "volatile uint8_t *" is incompatible with parameter of type "uint8_t *"
+            HAL_UART_Receive_IT(hUART, packet_hdr, 1);
+..\Src\task_master.c(91): warning:  #177-D: variable "msg_length" was declared but never referenced
+          static uint8_t msg_length = 0;
+..\Src\task_master.c(144): warning:  #546-D: transfer of control bypasses initialization of:
+            variable "temp_fp" (declared at line 157)
+            variable "temp_u32p" (declared at line 174)
+            variable "temp_32p" (declared at line 190)
+      switch(variable_table[target_var_index].data_type)
+      ^
+..\Src\task_master.c(235): warning:  #144-D: a value of type "volatile void *" cannot be used to initialize an entity of type "float *"
+                  float *target_var_ptr_f = variable_table[target_var_index].data;
+..\Src\task_master.c(260): warning:  #144-D: a value of type "volatile void *" cannot be used to initialize an entity of type "uint32_t *"
+                  uint32_t *target_var_ptr_u32 = variable_table[target_var_index].data;
+..\Src\task_master.c(270): warning:  #144-D: a value of type "volatile void *" cannot be used to initialize an entity of type "int32_t *"
+                  int32_t *target_var_ptr_32 = variable_table[target_var_index].data;
+..\Src\task_master.c(280): warning:  #144-D: a value of type "volatile void *" cannot be used to initialize an entity of type "int16_t *"
+                  int16_t *target_var_ptr_16 = variable_table[target_var_index].data;
+..\Src\task_master.c(231): warning:  #546-D: transfer of control bypasses initialization of:
+            variable "target_var_ptr_f" (declared at line 235)
+            variable "target_var_ptr_u32" (declared at line 260)
+            variable "target_var_ptr_32" (declared at line 270)
+          switch(variable_table[target_var_index].data_type)
+          ^
+..\Src\task_master.c(294): warning:  #167-D: argument of type "volatile uint8_t *" is incompatible with parameter of type "uint8_t *"
+      uint16_t fletcher = Fletcher_16( packet_payload, payload_length_SHARED );
+..\Src\task_master.c(313): warning:  #167-D: argument of type "volatile uint8_t *" is incompatible with parameter of type "uint8_t *"
+          HAL_UART_Receive_IT(&huart1, packet_hdr, 1);
+..\Src\task_master.c(334): warning:  #167-D: argument of type "volatile uint8_t *" is incompatible with parameter of type "uint8_t *"
+                    if(!Update_Variable(packet_payload+PAYLOAD_DATA, packet_payload[PAYLOAD_INDEX], payload_data_size))
+..\Src\task_master.c(388): warning:  #188-D: enumerated type mixed with another type
+                        current_state_SHARED = packet_payload[PAYLOAD_DATA];
+..\Src\task_master.c(318): warning:  #546-D: transfer of control bypasses initialization of:
+            variable "payload_data_size" (declared at line 332)
+            variable "update" (declared at line 370)
+            switch(packet_payload[PAYLOAD_OPCODE])
+            ^
+..\Src\task_master.c(481): warning:  #111-D: statement is unreachable
+                    break; 
+..\Src\task_master.c(495): warning:  #111-D: statement is unreachable
+                    break; 
+..\Src\task_master.c(509): warning:  #111-D: statement is unreachable
+                    break; 
+..\Src\task_master.c(523): warning:  #111-D: statement is unreachable
+                    break;
+..\Src\task_master.c(528): warning:  #111-D: statement is unreachable
+                    break;
+..\Src\task_master.c(531): warning:  #111-D: statement is unreachable
+                    break;
+..\Src\task_master.c(535): warning:  #1-D: last line of file ends without a newline
+  }
+..\Src\task_master.c: 29 warnings, 0 errors
 compiling freertos.c...
 linking...
 gsegv4 Configuration\gsegv4 Configuration.axf: Warning: L6304W: Duplicate input file gsegv4 configuration\freertos_1.o ignored.
-Program Size: Code=24904 RO-data=1056 RW-data=384 ZI-data=17176  
+Program Size: Code=24920 RO-data=1056 RW-data=384 ZI-data=17176  
 Finished: 0 information, 1 warning and 0 error messages.
-"gsegv4 Configuration\gsegv4 Configuration.axf" - 0 Error(s), 7 Warning(s).
+"gsegv4 Configuration\gsegv4 Configuration.axf" - 0 Error(s), 34 Warning(s).
 
 <h2>Collection of Component include folders:</h2>
-  E:\SrProject\gsegv6\gsegv4\MDK-ARM\RTE
+  C:\Users\jjfish\Documents\gitsandbox\ubalance\firmware\MDK-ARM\RTE
   C:\Keil_v5\ARM\PACK\Keil\STM32F4xx_DFP\2.3.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include
 
 <h2>Collection of Component Files used:</h2>

@@ -15,6 +15,15 @@
 #include "task_master.h"
 #include "matrix.h"
 
+extern UART_HandleTypeDef huart1;
+volatile uint8_t packet_hdr[3] = {0};//Two bytes for ID, one byte for length.
+volatile uint8_t packet_payload[MAX_PACKET_LENGTH] = {0};
+volatile uint8_t packet_length_SHARED;
+volatile uint8_t data_received_SHARED;        //defined in task_master
+volatile uint8_t payload_length_SHARED;       //defined in task_master
+volatile software_state current_state_SHARED = reset;          //define in task_master
+error_code error_code_SHARED = no_error;          //defined in task_master
+uint8_t test_in_progress_SHARED = 0;       //defined in task_master
 
 volatile adjustable_variable variable_table[number_of_vars] = {
        // Mapped to a local variable in PID function, in task_control
@@ -50,60 +59,72 @@ void task_master(void* pvParameters){
     software_state next_state = reset;
 
     HAL_UART_Receive_IT(&huart1, packet_hdr, 1);
-    UBaseType_t uxHighWaterMark;
-    xSemaphoreTake(testing_SEMAPHORE,0);
+    xSemaphoreTake(testing_SEMAPHORE,0); // Ensure that there are no free test semaphores available - this prevents the 
+                                         // test task from activating prematurely.
     while(1)
     {
-          taskENTER_CRITICAL();
-              current_state_SHARED = Compute_Software_State(current_state_SHARED);
+          //This section must be made thread-safe via critical section, since other tasks of the 
+          //same priority 
+          taskENTER_CRITICAL(); 
+              current_state_SHARED = Compute_Software_State(current_state_SHARED); 
           taskEXIT_CRITICAL();
 
-          //while(current_state_SHARED==error)
-         // {
-          //    printf("Critical Safety Error: Code %d", error_code_SHARED);
-          //    vTaskDelay(1000);
-         // }
-          
+          // data_received_SHARED is set exclusively from within the interrupt callback function,
+          // when a new packet is received by the UART.
           if(data_received_SHARED)
-          {
+          {                       
               Process_Command();
-              packet_payload[PAYLOAD_OPCODE] = 0; // Valid opcode should always be greater than zero. This line tells
-                                                  // the UART interrupt receive callback function that the data in the
-                                                  // data buffer is not valid/has been processed.
+              
+              // A valid, unprocessed packet will always have a non-zero value in the
+              // opcode field. Manually setting the opcode portion of the packet to
+              // zero marks the packet as *Processed*, so that it doesn't get processed
+              // more than once.
+              packet_payload[PAYLOAD_OPCODE] = 0; 
+              
               data_received_SHARED = 0;
           }
-          uxHighWaterMark = uxTaskGetStackHighWaterMark( NULL );
           vTaskDelayUntil(&xLastWakeTime, 10/portTICK_RATE_MS);
     }
 }
 
+// ******** put packet structure information here, talk about flow between processing commands in master task, and the 
+// variables shared between the callback, master task, processing, update/report variables functions
 void my_HAL_UART_RxCpltCallback(UART_HandleTypeDef *hUART)
 {
 	  static uint8_t msg_length = 0;
 	  __HAL_UART_FLUSH_DRREGISTER(hUART);
+      
+      // This "if" checks that a valid header has arrived, that the packet length is within allowed range, and 
+      // that the master task is ready to process a new packet.
       if((packet_hdr[2] == ID_H) && (packet_hdr[1] == ID_L) && (packet_hdr[PACKET_LENGTH]<=MAX_PACKET_LENGTH) && (!data_received_SHARED))
       {
-          // we know that interrupt has fired, and that a vallid header has arrived.
-          payload_length_SHARED = packet_hdr[PACKET_LENGTH];
-          if(0 == packet_payload[PAYLOAD_OPCODE]) //has the payload arrived yet? if NOT, 
+          payload_length_SHARED = packet_hdr[PACKET_LENGTH]; // This is used by other functions
+          
+          // Has the payload arrived yet? if NOT, 
+          if(0 == packet_payload[PAYLOAD_OPCODE]) 
           {
+              // Re-enable uart interrupts to capture the packet
               HAL_UART_Receive_IT(hUART, packet_payload, payload_length_SHARED);
           }
           else // if the payload HAS arrived,
           {
-              data_received_SHARED = 1; // flag to the master task that data has arrived, also block isr from getting more data
-              packet_hdr[2] = 0; // flush header capture array
-              packet_hdr[1] = 0;
-              HAL_UART_Receive_IT(hUART, packet_hdr, 1); // start looking for the next valid packet header
+              data_received_SHARED = 1; // flag to the master task that data has arrived, also block isr from 
+                                        // trying to receive any more packets.
+              
+              packet_hdr[2] = 0; // Flush header capture array. These usually contains ID bytes of the packet. 
+              packet_hdr[1] = 0; 
+              HAL_UART_Receive_IT(hUART, packet_hdr, 1); // Start looking for the next valid packet header
           }
       }
-      else // The header isn't here yet, so keep shifting new bytes into the header capture array.
+      
+      //This "else" executes when no valid packet header has been detected yet.
+      else
       {
-          __HAL_UART_FLUSH_DRREGISTER(hUART);
-          packet_hdr[2] = packet_hdr[1];
-          packet_hdr[1] = packet_hdr[0];
+          __HAL_UART_FLUSH_DRREGISTER(hUART); // clear data receive buffer,
+          packet_hdr[2] = packet_hdr[1];      // shift received data over by 
+          packet_hdr[1] = packet_hdr[0];      // one byte in the header array.
           packet_hdr[0] = 0;
-          HAL_UART_Receive_IT(hUART, packet_hdr, 1);
+          HAL_UART_Receive_IT(hUART, packet_hdr, 1); // receive one more 
       }
 }
 
@@ -450,7 +471,8 @@ uint8_t Compute_Software_State(uint8_t current_state)
     switch(current_state)
           {
               case reset  :
-                  if (error_code_SHARED){
+                  if (error_code_SHARED)
+                  {
                       return error;
                   }
                   if(abs((int32_t)physical_states_SHARED[0])<5)
@@ -472,7 +494,8 @@ uint8_t Compute_Software_State(uint8_t current_state)
                   break; 
                   
               case stabilize  :
-                  if (error_code_SHARED){
+                  if (error_code_SHARED)
+                  {
                       return error;
                   }    
                   if(test_in_progress_SHARED)
@@ -486,7 +509,8 @@ uint8_t Compute_Software_State(uint8_t current_state)
                   break; 
                   
               case manual  :
-                  if (error_code_SHARED){
+                  if (error_code_SHARED)
+                  {
                       return error;
                   }
                   if(test_in_progress_SHARED)
@@ -500,7 +524,8 @@ uint8_t Compute_Software_State(uint8_t current_state)
                   break; 
                   
               case test  :
-                  if (error_code_SHARED){
+                  if (error_code_SHARED)
+                  {
                       return error;
                   }
                   else if(test_in_progress_SHARED)
