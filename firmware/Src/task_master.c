@@ -26,37 +26,42 @@ error_code error_code_SHARED = no_error;          //defined in task_master
 uint8_t test_in_progress_SHARED = 0;       //defined in task_master
 
 volatile adjustable_variable variable_table[number_of_vars] = {
-       // Mapped to a local variable in PID function, in task_control
+       // The proportional coefficient from the PID function.
        {"k_proportional",  k_proportional,  NULL,  single_element,  float_type}, 
        
-       // Mapped to a local variable in PID function, in task_control
+       // The derivative coefficient from the PID function.
        {"k_derivative",    k_derivative,    NULL,  single_element,  float_type}, 
        
-       // Mapped to a local variable in PID function, in task_control
+       // The integral coefficient from the PID function.
        {"k_integral",      k_integral,      NULL,  single_element,  float_type},
        
-       // Mapped to a local variable in complimentary function, in task_control
+       // This is the weighting coefficient used in the tuneable complimentary filter
+       // function.
        {"dcm_alpha",       dcm_alpha,       NULL,  single_element,  float_type},
        
-       // Mapped to a global variable in in task_control
+       // An index which corresponds to the desired control function in the filter
+       // function dispatch table. 
        {"control_select",  control_select,  NULL,  single_element,  int32_t_type},
        
-       // Mapped to a global variable in in task_control
+       // An index which corresponds to the desired filter function in the filter
+       // function dispatch table. 
        {"filter_select",    filter_select,  NULL,  single_element,  int32_t_type},
        
-       // Mapped to a global variable in in task_control
+       // This is a test matrix used to verify that the matrix update, report, and
+       // math functions work properly.
        {"test_matrix",      test_matrix,    NULL,      matrix_2x2,  float_type}
 
     };
 
+/** \fn task_master
+ *  \brief This task processes all incoming commands from the user, and decides which software state the
+ *  system is in at a given time. 
+ */
 void task_master(void* pvParameters){
    
     uint8_t default_master_prio = uxTaskPriorityGet(NULL);
 	portTickType xLastWakeTime;
     xLastWakeTime = xTaskGetTickCount();
-    uint8_t receive_buffer[65];
-
-    software_state next_state = reset;
 
     HAL_UART_Receive_IT(&huart1, packet_hdr, 1);
     xSemaphoreTake(testing_SEMAPHORE,0); // Ensure that there are no free test semaphores available - this prevents the 
@@ -64,13 +69,13 @@ void task_master(void* pvParameters){
     while(1)
     {
           //This section must be made thread-safe via critical section, since other tasks of the 
-          //same priority 
+          //same priority use current_state_SHARED
           taskENTER_CRITICAL(); 
               current_state_SHARED = Compute_Software_State(current_state_SHARED); 
           taskEXIT_CRITICAL();
 
-          // data_received_SHARED is set exclusively from within the interrupt callback function,
-          // when a new packet is received by the UART.
+          // data_received_SHARED is set exclusively from within the UART receive-complete
+          // interrupt callback function.
           if(data_received_SHARED)
           {                       
               Process_Command();
@@ -78,7 +83,7 @@ void task_master(void* pvParameters){
               // A valid, unprocessed packet will always have a non-zero value in the
               // opcode field. Manually setting the opcode portion of the packet to
               // zero marks the packet as *Processed*, so that it doesn't get processed
-              // more than once.
+              // more than once by the UART interrupt callback function.
               packet_payload[PAYLOAD_OPCODE] = 0; 
               
               data_received_SHARED = 0;
@@ -87,8 +92,21 @@ void task_master(void* pvParameters){
     }
 }
 
-// ******** put packet structure information here, talk about flow between processing commands in master task, and the 
-// variables shared between the callback, master task, processing, update/report variables functions
+/** \fn my_HAL_UART_RxCpltCallback
+ *  \brief This callback function triggers upon UART receive-complete interrupts. It detects
+ *  incoming packets within the stream of incoming received characters, and flags the packets
+ *  for processing by the master task.
+ * 
+ *  The header contains two ID bytes and a payload length byte. The function receives characters one 
+ *  at a time, until a valid header is detected. It then receives the number of characters specified by
+ *  the payload length byte. Once the full payload has been received, the data_received_SHARED flag is set,
+ *  prompting the task_master function to process the user-command embedded in the payload. 
+ *  
+ *  The packet structure is as follows:
+ *  Packet : |Header||Payload|
+ *  Header : |ID_H|ID_L|Payload_length| ~ 3 bytes. Maximum possible payload length is 255 bytes.
+ *  Payload : |opcode|index|data|fletcher_16 check bytes(2)| ~ between 4 bytes (no data case) and 255 bytes total length. 
+ */
 void my_HAL_UART_RxCpltCallback(UART_HandleTypeDef *hUART)
 {
 	  static uint8_t msg_length = 0;
@@ -113,21 +131,28 @@ void my_HAL_UART_RxCpltCallback(UART_HandleTypeDef *hUART)
               
               packet_hdr[2] = 0; // Flush header capture array. These usually contains ID bytes of the packet. 
               packet_hdr[1] = 0; 
-              HAL_UART_Receive_IT(hUART, packet_hdr, 1); // Start looking for the next valid packet header
+              HAL_UART_Receive_IT(hUART, packet_hdr, 1); // Start looking for the next valid packet header.
           }
       }
       
       //This "else" executes when no valid packet header has been detected yet.
       else
       {
-          __HAL_UART_FLUSH_DRREGISTER(hUART); // clear data receive buffer,
-          packet_hdr[2] = packet_hdr[1];      // shift received data over by 
-          packet_hdr[1] = packet_hdr[0];      // one byte in the header array.
+          __HAL_UART_FLUSH_DRREGISTER(hUART); // Clear data receive buffer.
+          
+          packet_hdr[2] = packet_hdr[1];      // Shift received data over by 
+          packet_hdr[1] = packet_hdr[0];      // one byte in the header buffer.
           packet_hdr[0] = 0;
-          HAL_UART_Receive_IT(hUART, packet_hdr, 1); // receive one more 
+          HAL_UART_Receive_IT(hUART, packet_hdr, 1); // Read another byte into the header buffer.
       }
 }
 
+/** \fn Fletcher_16
+ *  \brief This function checks that the payload hasn't been corrupted, by verifying that the 
+ *  fletcher_16 checksum of the entire payload equals zero.
+ *  \param data This is a pointer to the data to be checked. 
+ *  \param count This is the length of the data in bytes.
+ */
 uint16_t Fletcher_16( uint8_t* data, int count )
 {
    uint16_t sum1 = 0;
@@ -142,17 +167,28 @@ uint16_t Fletcher_16( uint8_t* data, int count )
    return (sum2 << 8) | sum1;
 }
 
- 
+ /** \fn Update_Variable
+ *  \brief This function updates the value of one of the Global Adjustable Variables to the value
+ *  specified by the user.
+ *  \param packet_data_ptr This is a pointer to the data contained in the payload/packet. 
+ *  \param target_var_index This is the index of the variable in the table of Global Adjustable Variables.
+ *  \param packet_data_size This is the length, in bytes, of the data found in the payload/packet.
+ *  \return Returns 1 when the variable's value is successfully updated, 0 when an error occurs.
+ */
 uint8_t Update_Variable( uint8_t* packet_data_ptr, uint8_t target_var_index, uint8_t packet_data_size){
+    
+    // The data in the packet must be read into a new buffer. This is so that if the data must be
+    // type cast as a float or 32-bit int, its first memory location will be on an even multiple 
+    // of 4(preventing a bus error). When this step is skipped, a bus error occurs intermittently,
+    // causing the microcontroller to crash. The compiler doesn't catch the error!
     uint8_t count;
-    uint8_t temp[64];
-    //uint8_t COMPLETE_TEST_DLTPLS = 255;
-     //printf("TEST %d\n\r", COMPLETE_TEST_DLTPLS);
+    uint8_t temp[64]; // Largest possible data size is a 4*4 Matrix of floats 
+                      //(4 bytes/float)*(4 rows)*(4 cols) = 64 bytes
     for(count = 0; count<packet_data_size; count++)
     {
         temp[count] = packet_data_ptr[count];
-        //printf("TEST %d\n\r", packet_data_ptr[count]);
     }
+    
     switch(variable_table[target_var_index].data_type)
     {
         
@@ -324,87 +360,80 @@ void Process_Command(void){
         taskEXIT_CRITICAL();
         HAL_UART_Receive_IT(&huart1, packet_hdr, 1);
     }
-      else
-      {
-          printf("Processing command ");
-          switch(packet_payload[PAYLOAD_OPCODE])
-          {
-              case empty  :
-                  
-                  printf("empty\n\r");
-              
-              case update_variable  :
-                  printf("update_variable \n\r");
-                  if(current_state_SHARED == error || current_state_SHARED == test)
-                  {
-                      printf("Error: Variables are only user-adjustable from the \"manual\", \"reset\" and \"stabilize\" states\n\r");
-                      printf("Current_state_SHARED: %d\n\r", current_state_SHARED);
-                      break;
-                  }
-                  uint8_t payload_data_size = payload_length_SHARED - 4; // 2 bytes for checksum, 1 for index, 1 for Opcode 
-                  //if(!Update_Variable(&(packet_payload[PAYLOAD_DATA]), packet_payload[PAYLOAD_INDEX], payload_data_size))
-                  if(!Update_Variable(packet_payload+PAYLOAD_DATA, packet_payload[PAYLOAD_INDEX], payload_data_size))
-                  {
-                      printf("Error: Incorrect packet data size\n\r");
-                  }
-                  break; /* optional */
-              
-              case variable_report  :
-                  printf("variable_report \n\r");
-                  Report_Variable(packet_payload[PAYLOAD_INDEX]);
-                  break; /* optional */
-              
-              case full_variable_report  :
-                  printf("full_variable_report \n\r");
-                  //statement(s);
-                  for(count = 0; count<number_of_vars; count++)
-                  {
-                      Report_Variable(count);
-                  }
-                  break; /* optional */
-              
-              case update_ref_input :
-                  printf("update_ref_input \n\r");
-                  if(current_state_SHARED == manual)
-                  {
+    else
+    {
+        printf("Processing command ");
+        switch(packet_payload[PAYLOAD_OPCODE])
+        {
+            case empty  :
+                printf("empty\n\r");
+            case update_variable  :
+                printf("update_variable \n\r");
+                if(current_state_SHARED == error || current_state_SHARED == test)
+                {
+                    printf("Error: Variables are only user-adjustable from the \"manual\", \"reset\" and \"stabilize\" states\n\r");
+                    printf("Current_state_SHARED: %d\n\r", current_state_SHARED);
+                    break;
+                }
+                uint8_t payload_data_size = payload_length_SHARED - 4; // 2 bytes for checksum, 1 for index, 1 for Opcode 
+                //if(!Update_Variable(&(packet_payload[PAYLOAD_DATA]), packet_payload[PAYLOAD_INDEX], payload_data_size))
+                if(!Update_Variable(packet_payload+PAYLOAD_DATA, packet_payload[PAYLOAD_INDEX], payload_data_size))
+                {
+                    printf("Error: Incorrect packet data size\n\r");
+                }
+                break; /* optional */
+            case variable_report  :
+                printf("variable_report \n\r");
+                Report_Variable(packet_payload[PAYLOAD_INDEX]);
+                break; /* optional */
+            case full_variable_report  :
+                printf("full_variable_report \n\r");
+                //statement(s);
+                for(count = 0; count<number_of_vars; count++)
+                {
+                    Report_Variable(count);
+                }
+                break; /* optional */
+            case update_ref_input :
+                printf("update_ref_input \n\r");
+                if(current_state_SHARED == manual)
+                {
                       // COME UP WITH WHAT TO DO HERE
-                  }
-                  else
-                  {
-                      printf("Error: reference input only changeable from Manual State\n\r");
-                  }
-                  //statement(s);
-                  break; /* optional */
-              
-              case update_coefficients :
-                  printf("update coefficients \n\r");
-                  //SEND DATA IN A QUEUE
-                  uint8_t update = 1;
-                  xQueueSend(update_coefficients_QUEUE, &update, 0);
-                  break; /* optional */
-              
-              case change_state  :
-                  printf("change state \n\r");
-                  if(current_state_SHARED == error || current_state_SHARED == test )
-                  {
-                      printf("Error: Variables are only user-adjustable from the \"manual\", \"reset\", and \"stabilize\" states\n\r");
-                      printf("Current_state_SHARED: %d\n\r", current_state_SHARED);
-                      break;
-                  }
-                  else if(packet_payload[PAYLOAD_DATA]>error)
-                  {
-                      printf("Error: Requested state does not exist\n\r");
-                  }
-                  else
-                  {
-                      current_state_SHARED = packet_payload[PAYLOAD_DATA];
-                      if(current_state_SHARED == test)
-                      {
-                          xSemaphoreGive(testing_SEMAPHORE);
-                          test_in_progress_SHARED = 1;
-                      }
-                  }
-                  //statement(s);
+                }
+                else
+                {
+                    printf("Error: reference input only changeable from Manual State\n\r");
+                }
+                //statement(s);
+                break; /* optional */
+            case update_coefficients :
+                printf("update coefficients \n\r");
+                //SEND DATA IN A QUEUE
+                uint8_t update = 1;
+                xQueueSend(update_coefficients_QUEUE, &update, 0);
+                break; /* optional */
+            case change_state  :
+                printf("change state \n\r");
+                if(current_state_SHARED == error || current_state_SHARED == test )
+                {
+                    printf("Error: Variables are only user-adjustable from the \"manual\", \"reset\", and \"stabilize\" states\n\r");
+                    printf("Current_state_SHARED: %d\n\r", current_state_SHARED);
+                    break;
+                }
+                else if(packet_payload[PAYLOAD_DATA]>error)
+                {
+                    printf("Error: Requested state does not exist\n\r");
+                }
+                else
+                {
+                    current_state_SHARED = packet_payload[PAYLOAD_DATA];
+                    if(current_state_SHARED == test)
+                    {
+                        xSemaphoreGive(testing_SEMAPHORE);
+                        test_in_progress_SHARED = 1;
+                    }
+                }
+                //statement(s);
                   break; 
               case report_state :
                   printf("Processing Command : report_state \n\r");
@@ -460,9 +489,9 @@ void Process_Command(void){
               default :
                   printf("Error, incorrect opcode! \n\r");
                   break;
-          }
-          printf("Last command processed\n\r");
-      }
+        }
+        printf("Last command processed\n\r");
+    }
 }
 
 uint8_t Compute_Software_State(uint8_t current_state)
@@ -546,6 +575,6 @@ uint8_t Compute_Software_State(uint8_t current_state)
                   return reset;
                   break;
           }
-          printf("problem with state logic - shouldn't reach this point");
-          return reset;
+    printf("problem with state logic - shouldn't reach this point");
+    return reset;
 }

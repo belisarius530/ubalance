@@ -73,10 +73,11 @@ volatile int32_t filter_select_SHARED = 0;
 float physical_states_SHARED[4] = {0.0};
 int16_t (*control_fxn_table[num_control_fxn])(float physical_states[4], float reference_input[4], uint8_t update_coefficients);
 void (*filter_fxn_table[num_filter_fxn])( float physical_states[4],int16_t *accl_data, int16_t *gyro_data, uint8_t update_coefficients);
-/** \fn task_control
- *  \brief Handles data collection, fusion, selection of control & filter laws, and computation of control signal.
- */
 
+/** \fn task_control
+ *  \brief Handles sensor data collection, fusion, selection of control & filter laws, and computation of control signal,
+ *  based on the software state.
+ */
 void task_control(void* pvParameters){
 	uint8_t default_control_prio = uxTaskPriorityGet(NULL);
 	portTickType xLastWakeTime;
@@ -209,8 +210,7 @@ void gyro_init(void){
 void accl_measure(int16_t *accl_data){
     uint8_t *data_pointer = (uint8_t *)accl_data;
     HAL_I2C_Mem_Read(&hi2c1, ACCL_I2C_ADDR, 0xA8, I2C_MEMADD_SIZE_8BIT, data_pointer, 6, HAL_MAX_DELAY);
-    //*(accl_data+2)=*(accl_data+2) - 1516;
-    *(accl_data+2)=*(accl_data+2);// - 1516; // PLEASE REVIEW
+    // *(accl_data+2)=*(accl_data+2);// - 1516; // PLEASE REVIEW
 }
 
 /** \fn gyro_measure 
@@ -287,8 +287,8 @@ void motor_1_power(int16_t power){
 
 /** \fn DCM 
  *  \brief Direction Cosine Matrix - this is an adjustable complimentary filter, which fuses the
- *  measurement data into state estimates by effectively low-pass filtering the accelerometers, and
- *  high-pass filtering the gyros.
+ *  measurement data into state estimates by effectively low-pass filtering the accelerometers, 
+ *  high-pass filtering the gyros, and producing a weighted average based on the two results.
  *  \param physical_states Location in memory of the current estimates of the physical states of the 
  *  system.
  *  \param accl_data This is a pointer to the latest accelerometer measurement.
@@ -297,7 +297,6 @@ void motor_1_power(int16_t power){
  *  refresh its local copies of adjustable global variables
  */ 
 void DCM( float physical_states[4],int16_t *accl_data, int16_t *gyro_data, uint8_t update_coefficients){
-    // All parameters are out parameters
     static float alpha = .5; // Must be between 0 and 1
     static int32_t position_prev = 0;
     int32_t position = 0;  
@@ -331,9 +330,9 @@ void DCM( float physical_states[4],int16_t *accl_data, int16_t *gyro_data, uint8
 
 // UPDATE COMMENTS WITH THOSE FROM DCM
 /** \fn DCM_fix
- *  \brief Direction Cosine Matrix - this is a fixed, pre-tuned complimentary filter, which fuses the
- *  measurement data into state estimates by effectively low-pass filtering the accelerometers, and
- *  high-pass filtering the gyros.
+ *  \brief Direction Cosine Matrix - this is an adjustable complimentary filter, which fuses the
+ *  measurement data into state estimates by effectively low-pass filtering the accelerometers, 
+ *  high-pass filtering the gyros, and producing a weighted average based on the two results.
  *  \param physical_states Location in memory of the current estimates of the physical states of the 
  *  system.
  *  \param accl_data This is a pointer to the latest accelerometer measurement.
@@ -342,11 +341,13 @@ void DCM( float physical_states[4],int16_t *accl_data, int16_t *gyro_data, uint8
  *  refresh its local copies of adjustable global variables
  */ 
 void DCM_fix( float physical_states[4],int16_t *accl_data, int16_t *gyro_data, uint8_t update_coefficients){
-    // All parameters are out parameters
     static float alpha = .5; // Must be between 0 and 1
     float sample_time_sec = (SAMPLE_TIME_MS)/1000.0;
     static int32_t position_prev = 0;
     int32_t position = 0;
+    
+    // If the update coefficients flag has been set, update local copies of global adjustable
+    // variables in a thread-safe manner.
     if(update_coefficients){
         taskENTER_CRITICAL();
             alpha = DCM_ALPHA_SHARED;
@@ -356,12 +357,16 @@ void DCM_fix( float physical_states[4],int16_t *accl_data, int16_t *gyro_data, u
         printf("DELETME in DCM fixed function");
     }
 
+    // Compute the angle from the accelerometer measurements, and the change in angle from the 
+    // gyro measurements.
     float accl_pitch_angle = RADIAN_TO_DEGREES*atan2( (double)(accl_data[X_AXIS]),(double)(accl_data[Z_AXIS]) );
     float gyro_delta_angle = (gyro_data[Y_AXIS])*GYRO_DPS_PER_BIT*sample_time_sec;
 
+    // Compute the estimated angle based on the measurements.
     physical_states[ANGLE] = alpha*(physical_states[ANGLE]-gyro_delta_angle)+ (1.0-alpha)*accl_pitch_angle;
     physical_states[ANGULAR_VELOCITY] = -GYRO_DPS_PER_BIT*gyro_data[Y_AXIS];
 
+    // Compute the translational position and velocity of the device.
     position = (position_enc_0_SHARED + position_enc_1_SHARED)/2;
     physical_states[POSITION] = (float)position*RAD_PER_COUNT*WHEEL_RADIUS_METERS;
     physical_states[VELOCITY] = (float)(position - position_prev)*(100.0)*RAD_PER_COUNT*WHEEL_RADIUS_METERS; //100 comes from 1/T, T being the sample time of .1 sec
@@ -369,33 +374,32 @@ void DCM_fix( float physical_states[4],int16_t *accl_data, int16_t *gyro_data, u
         
 }
 
-
+/** \fn No_Pwr
+ *  \brief  Using this for the control function basically just turns off the motors.
+ */
 int16_t No_Pwr(float physical_states[4], float reference_input[4], uint8_t update_coefficients){
     return 0;
 }
 
-/** \fn PID_fix
- *  \brief  This is a pre-tuned PID function, which will be used in the "stabilize" state.
+/** \fn PID
+ *  \brief  This is an online tuneable PID function.
  *  \param physical_states These represent the physical states of the system as determined by
  *  the filter law that's in use: angle, angular velocity, translational position, and
- *  translational velocity.
- *  \param reference_input This is an array which corresponds to desired physical states of the system.
+ *  translational velocity, for example.
+ *  \param reference_input This is an array which corresponds to the control system input -
+ *  the desired physical states of the system.
  *  \param update_coefficients When this is non-zero, the local static copies of the global, 
  *  adjustable variables refresh their values. 
  *  \return Returns the computed control signal for the motor controllers. 
  */
 int16_t PID(float physical_states[4], float reference_input[4], uint8_t update_coefficients){
-
 	static float integrator_out_prev = 0; 
 	static float error_prev = 0;
-    
     static float K_INT = 0;
     static float K_PROP =  1.0;
     static float K_DER = .01;
-    
     const static int16_t OUT_CLAMP = 1000;
     const static float INT_CLAMP = 100;
-    
     float error;
 	float derivative_out;
 	float proportional_out;
@@ -423,8 +427,8 @@ int16_t PID(float physical_states[4], float reference_input[4], uint8_t update_c
 	
 	integrator_out = K_INT*(float)error + integrator_out_prev; 
 	
-	if( integrator_out > INT_CLAMP ) // This integrator saturation limit should be something that is specified as a parameter of the constructor
-	{
+	if( integrator_out > INT_CLAMP ) 
+    {
 		integrator_out = INT_CLAMP;
 	}
 	if( integrator_out < -INT_CLAMP )
@@ -436,19 +440,20 @@ int16_t PID(float physical_states[4], float reference_input[4], uint8_t update_c
 
 	//////////////////////////////////////
 	// Derivative Term Calculation
-	derivative_out = K_DER*(error - error_prev );     //derivative of measurement--constant ref drops out.
-	
+    //derivative_out = -K_DER*physical_states[ANGULAR_VELOCITY];
+	derivative_out = K_DER*(error - error_prev );   // Derivative on measurement--constant reference input drops out.
+	                                                // This also eliminates "derivative kick" problems.
 	error_prev = error;
 
-        /////////////////////////////////////
-        // Compute Output Signal
+    /////////////////////////////////////
+    // Compute Output Signal
 	int16_t out = proportional_out + integrator_out + derivative_out;
 	if( out  > OUT_CLAMP ) out = OUT_CLAMP;
 	if( out < -OUT_CLAMP ) out = -OUT_CLAMP;
 	return out;
 }
 
-// PLEASE COPY COMMENTS OVER FROM PID
+
 
 /** \fn PID_fix
  *  \brief  This is a pre-tuned PID function, which will be used in the "stabilize" state.
@@ -461,26 +466,18 @@ int16_t PID(float physical_states[4], float reference_input[4], uint8_t update_c
  *  \return Returns the computed control signal for the motor controllers. 
  */
 int16_t PID_fix(float physical_states[4], float reference_input[4], uint8_t update_coefficients){
-
 	static float integrator_out_prev = 0; 
 	static float error_prev = 0;
-    
     float K_INT = 0;
-   
     float K_PROP =  1.0;
-    
     float K_DER = .01;
-    
-    const int16_t OUT_CLAMP = 300;
-	static float INT_CLAMP = 75;
-    
+    const static int16_t OUT_CLAMP = 300;
+	const static float INT_CLAMP = 75;
     float error;
 	float derivative_out;
 	float proportional_out;
 	float integrator_out;
     
-   
-	
 	error = reference_input[ANGLE] - physical_states[ANGLE];
 	///////////////////////////////////////
 	// Proportional Term Calculation
