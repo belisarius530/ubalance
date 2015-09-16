@@ -515,7 +515,7 @@ void Process_Command(void){
                   printf("Processing Command : report_physical_state \n\r");
                   printf("\n\r State Values \n\r");
                   printf("--------------- \n\r");
-                  printf(" Angle            = %f \n\r", physical_states_SHARED[0]);
+                  printf(" Angle            = %f \n\r", physical_states_SHARED[0]-angle_offset_SHARED);
                   printf(" Angular Velocity = %f \n\r", physical_states_SHARED[1]);
                   printf(" Position         = %f \n\r", physical_states_SHARED[2]);
                   printf(" Velocity         = %f \n\r", physical_states_SHARED[3]);
@@ -574,7 +574,7 @@ uint8_t Compute_Software_State(uint8_t current_state)
                   {
                       return error;
                   }
-                  else if( (abs((int32_t)physical_states_SHARED[ANGLE])<6) && (abs(physical_states_SHARED[ANGULAR_VELOCITY]*4.0)<1))
+                  else if( (abs((int32_t)physical_states_SHARED[ANGLE])<6) && (abs(physical_states_SHARED[ANGULAR_VELOCITY]*1.5)<1))
                   {
                       reset_count++;
                   }
