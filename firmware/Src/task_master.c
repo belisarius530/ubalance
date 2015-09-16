@@ -101,41 +101,59 @@ void task_master(void* pvParameters){
  *  incoming packets within the stream of incoming received characters, and flags the packets
  *  for processing by the master task.
  * 
- *  The header contains two ID bytes and a payload length byte. The function receives characters one 
+ *  \details The header contains two ID bytes and a payload length byte. The function receives characters one 
  *  at a time, until a valid header is detected. It then receives the number of characters specified by
  *  the payload length byte. Once the full payload has been received, the data_received_SHARED flag is set,
- *  prompting the task_master function to process the user-command embedded in the payload. 
+ *  prompting the task_master function to process the user-command embedded in the payload. In short:
+ *
+ *  1. Look for valid header.
+ *  2. When header is detected, look for the corresponding payload.
+ *  3. Flag the entire packet for processing by the master_task 
  *  
  *  The packet structure is as follows:
  *  Packet : |Header||Payload|
- *  Header : |ID_H|ID_L|Payload_length| ~ 3 bytes. Maximum possible payload length is 255 bytes.
+ *  Header : |ID_H|ID_L|Payload_length| ~ 3 bytes total length
  *  Payload : |opcode|index|data|fletcher_16 check bytes(2)| ~ between 4 bytes (no data case) and 255 bytes total length. 
+ *  
+ *  Fields:
+ *  ID_H: 0xA
+ *  ID_L: 0x9
+ *  Payload_Length: length, in bytes of the payload to be received.
+ *  opcode: This corresponds to the command specified by the user. For example, it could correspond to "Report_Variable",
+ *      "Update_Variable", "Report_Physical_States", etc.
+ *  index: The index, in the GAV table, of the GAV being operated on by the command. 
+ *  data: Data associated with the command specified by the opcode. 
+ *  Fletcher_16 check bytes: Bytes used with the fletcher_16 checksum algorithm to ensure data fidelity. 
  */
 void my_HAL_UART_RxCpltCallback(UART_HandleTypeDef *hUART)
 {
+          // A UART receive complete interrupt must have triggered to be here. 
+
 	  static uint8_t msg_length = 0;
+          // Ensure that the uart receive buffer is clear. This helps, as the buffer can otherwise overflow and 
+          // the entire microcontroller could potentially crash as a result. 
 	  __HAL_UART_FLUSH_DRREGISTER(hUART);
       
       // This "if" checks that a valid header has arrived, that the packet length is within allowed range, and 
       // that the master task is ready to process a new packet.
       if((packet_hdr[2] == ID_H) && (packet_hdr[1] == ID_L) && (packet_hdr[PACKET_LENGTH]<=MAX_PACKET_LENGTH) && (!data_received_SHARED))
       {
-          payload_length_SHARED = packet_hdr[PACKET_LENGTH]; // This is used by other functions
+          payload_length_SHARED = packet_hdr[PACKET_LENGTH]; // This variable will be used within other functions, so must be global.
           
-          // Has the payload arrived yet? if NOT, 
+          // The header must have arrived, but has payload arrived yet? if NOT, 
           if(0 == packet_payload[PAYLOAD_OPCODE]) 
           {
-              // Re-enable uart interrupts to capture the packet
+              // Re-enable uart interrupts to capture the payload - trigger another interrupt after payload_length bytes are received.
               HAL_UART_Receive_IT(hUART, packet_payload, payload_length_SHARED);
           }
           else // if the payload HAS arrived,
           {
-              data_received_SHARED = 1; // flag to the master task that data has arrived, also block isr from 
+              data_received_SHARED = 1; // flag to the master task that a new valid packet has arrived, also block isr from 
                                         // trying to receive any more packets.
               
               packet_hdr[2] = 0; // Flush header capture array. These usually contains ID bytes of the packet. 
               packet_hdr[1] = 0; 
-              HAL_UART_Receive_IT(hUART, packet_hdr, 1); // Start looking for the next valid packet header.
+              HAL_UART_Receive_IT(hUART, packet_hdr, 1); // Start looking for the next valid packet header, one byte at a time.
           }
       }
       
@@ -193,29 +211,41 @@ uint8_t Update_Variable( uint8_t* packet_data_ptr, uint8_t target_var_index, uin
         temp[count] = packet_data_ptr[count];
     }
     
+    // The Global Adjustable Variable Table is an array of structs found within the task_master.c file.
+    // Each struct corresponds to one of the Global Adjustable Variables. Some of the fields in those
+    // structs include a variable corresponding to the data type, and another field is a void* pointer
+    // which holds the actual memory location of the Global Adjustable Variable.
     switch(variable_table[target_var_index].data_type)
     {
-        
+    
+    // Note  - OPTIMIZE THIS WHEN POSSIBLE, VERY LIKELY A BETTER WAY TO DO IT.
         case float_type  :
             packet_data_size = packet_data_size/(sizeof(float));
+
+            //Check that the correct number of elements have been received for the GAV.
             if(variable_table[target_var_index].data_size != packet_data_size)
             {
                 printf("\n\r ERROR: Variable data size doesn't agree with packet size\n\r");
-                return 0;
-                
+                return 0;          
             }
             volatile float *local_data_f;
             local_data_f = variable_table[target_var_index].data;
-            float * temp_fp = (float*)temp;
+
+            // Recall that temp is the character array necessary to prevent that sneaky little bus error.
+            // Here we pass the first memory location of that temporary char array to a float pointer.
+            float * temp_fp = (float*)temp; 
+            
+            // Transfer received data, one element at a time, to the location of the GAV 
             for( count = 0; count<packet_data_size; count++)
             {
-
                 local_data_f[count] = *(temp_fp + count);  
             }
-            break; /* optional */
+            break;
             
         case uint32_t_type  :
             packet_data_size = packet_data_size/(sizeof(uint32_t));
+            
+            //Check that the correct number of elements have been received for the GAV.
             if(variable_table[target_var_index].data_size != packet_data_size)
             {
                 printf("\n\r ERROR: Variable data size doesn't agree with packet size\n\r");
@@ -223,7 +253,11 @@ uint8_t Update_Variable( uint8_t* packet_data_ptr, uint8_t target_var_index, uin
             }
             volatile uint32_t *local_data_u32;
             local_data_u32 = variable_table[target_var_index].data;
+            // Recall that temp is the character array necessary to prevent that sneaky little bus error.
+            // Here we pass the first memory location of that temporary char array to a uint32 pointer.
             uint32_t *temp_u32p = (uint32_t*)temp;
+            
+            // Transfer received data, one element at a time, to the location of the GAV 
             for( count = 0; count<packet_data_size; count++)
             {
                 local_data_u32[count] = *(temp_u32p + count);  
@@ -232,6 +266,8 @@ uint8_t Update_Variable( uint8_t* packet_data_ptr, uint8_t target_var_index, uin
             
         case int32_t_type  :
             packet_data_size = packet_data_size/(sizeof(int32_t));
+            
+            //Check that the correct number of elements have been received for the GAV.
             if(variable_table[target_var_index].data_size != packet_data_size)
             {
                 printf("\n\r ERROR: Variable data size doesn't agree with packet size\n\r");
@@ -239,17 +275,21 @@ uint8_t Update_Variable( uint8_t* packet_data_ptr, uint8_t target_var_index, uin
             }
             volatile int32_t *local_data_32;
             local_data_32 = variable_table[target_var_index].data;
+            // Recall that temp is the character array necessary to prevent that sneaky little bus error.
+            // Here we pass the first memory location of that temporary char array to a int32 pointer.
             int32_t *temp_32p = (int32_t*)temp;
+            
+            // Transfer received data, one element at a time, to the location of the GAV 
             for( count = 0; count<packet_data_size; count++)
             {
                 local_data_32[count] = *(temp_32p + count);  
             }
-//printf("TEST the value of -3 should print as : %d", (-3));
-           // printf("TEST Value of newly stored variable: %d", *temp_32p);
-            break; 
-            
+            break;
+
         case int16_t_type  :
             packet_data_size = packet_data_size/(sizeof(int16_t));
+            
+            //Check that the correct number of elements have been received for the GAV.
             if(variable_table[target_var_index].data_size != packet_data_size)
             {
                 printf("\n\r ERROR:  Variable data size doesn't agree with packet size\n\r");
@@ -257,7 +297,11 @@ uint8_t Update_Variable( uint8_t* packet_data_ptr, uint8_t target_var_index, uin
             }
             volatile int16_t *local_data_16;
             local_data_16 = variable_table[target_var_index].data;
+            // Recall that temp is the character array necessary to prevent that sneaky little bus error.
+            // Here we pass the first memory location of that temporary char array to a int16 pointer.
             int16_t * temp_16p = (int16_t*)temp;
+            
+            // Transfer received data, one element at a time, to the location of the GAV 
             for( count = 0; count<packet_data_size; count++)
             {
                 local_data_16[count] = *(temp_16p + count);  
@@ -268,8 +312,14 @@ uint8_t Update_Variable( uint8_t* packet_data_ptr, uint8_t target_var_index, uin
     return 1;
 }
 
+ /** \fn Report_Variable
+ *  \brief This function reports the value of one of the Global Adjustable Variables to the user.
+ *  \param target_var_index This is the index of the variable in the table of Global Adjustable Variables.
+ */
 void Report_Variable(uint8_t target_var_index){
     uint8_t count;
+   
+    // number_of_vars is an enum, corresponding to the total number of Global Adjustable Variables.
     if(target_var_index >= number_of_vars){
         printf("Error: Requested variable index is out of range");
     }
@@ -280,6 +330,9 @@ void Report_Variable(uint8_t target_var_index){
         printf("----------------------------------------\n\r");
         printf("target_var_index : %d\n\r", target_var_index);
         printf("data size : %d\n\r", data_size);
+        
+        // Since the GAVs can be of several data types, we use a switch statement to print their values properly
+        // according to the appropriate type. 
         switch(variable_table[target_var_index].data_type)
         {
             case float_type  :
@@ -300,11 +353,7 @@ void Report_Variable(uint8_t target_var_index){
                     print_mtrx_nxn(4, target_var_ptr_f);
                     printf("\n\r");
                 }
-//                for(count =0; count<data_size; count++)
-//                {
-//                    printf("element %d: %lf\n\r", count, *(target_var_ptr_f+count) );
-//                }
-                break; /* optional */
+                break;
             
             case uint32_t_type  :
                 
@@ -315,7 +364,7 @@ void Report_Variable(uint8_t target_var_index){
                 {
                     printf("element %d: %d\n\r", count, *(target_var_ptr_u32+count) );
                 }
-                break; /* optional */
+                break;
             
             case int32_t_type  :
                 ;
@@ -340,13 +389,22 @@ void Report_Variable(uint8_t target_var_index){
     printf("----------------------------------------\n\r");
     }
 }
+/** \fn Process_Command
+ *  \brief This function processes commands received from the user.
+ *  \details Every packet received from the 
+ *  user contains an "opcode" field. The opcode corresponds to one of the possible commands. Each command
+ *  is listed by name in the opcode enum found in the task_master.h file. When the Process_Command() function
+ *  is run, it is assumed that there is a new, valid packed within the packet_payload array. This is further
+ *  verified by the checksum algorithm, and the checks that the opcode, and index are within the correct range.
+ */
 
 void Process_Command(void){
     uint8_t count;
-    uint16_t fletcher = Fletcher_16( packet_payload, payload_length_SHARED );
+    uint16_t fletcher = Fletcher_16( packet_payload, payload_length_SHARED );// This should be zero for valid data
     uint8_t opcode = packet_payload[PAYLOAD_OPCODE];
     if( !opcode || fletcher )//Verify_fletcher_checksum(payload_length_SHARED, packet_payload))
     {
+        // Something has gone wrong here - either the opcode is zero or negative, or the checksum failed
         printf("Error: Last packet corrupted\n\r");
         if (fletcher)
           printf("Fletcher checksum failed\n\r");
@@ -363,6 +421,7 @@ void Process_Command(void){
           packet_hdr[0] = 0;
         taskEXIT_CRITICAL();
         HAL_UART_Receive_IT(&huart1, packet_hdr, 1);
+        // Begin looking for the next valid packet, starting with the header.
     }
     else
     {
@@ -385,11 +444,11 @@ void Process_Command(void){
                 {
                     printf("Error: Incorrect packet data size\n\r");
                 }
-                break; /* optional */
+                break; 
             case variable_report  :
                 printf("variable_report \n\r");
                 Report_Variable(packet_payload[PAYLOAD_INDEX]);
-                break; /* optional */
+                break; 
             case full_variable_report  :
                 printf("full_variable_report \n\r");
                 //statement(s);
@@ -397,25 +456,25 @@ void Process_Command(void){
                 {
                     Report_Variable(count);
                 }
-                break; /* optional */
+                break;
             case update_ref_input :
                 printf("update_ref_input \n\r");
                 if(current_state_SHARED == manual)
                 {
-                      // COME UP WITH WHAT TO DO HERE
+                      // COMING SOON
                 }
                 else
                 {
                     printf("Error: reference input only changeable from Manual State\n\r");
                 }
                 //statement(s);
-                break; /* optional */
+                break;
             case update_coefficients :
                 printf("update coefficients \n\r");
                 //SEND DATA IN A QUEUE
                 uint8_t update = 1;
                 xQueueSend(update_coefficients_QUEUE, &update, 0);
-                break; /* optional */
+                break; 
             case change_state  :
                 printf("change state \n\r");
                 if(current_state_SHARED == error || current_state_SHARED == test )
@@ -497,6 +556,13 @@ void Process_Command(void){
         printf("Last command processed\n\r");
     }
 }
+
+/** \fn Compute_Software_State
+ *  \brief This function performs the logic required to determine the next software state of the system.
+ *  \details This function performs the logic required to determine the next software state of the system,
+ *  based on the current software state, and several other internal variables, including flags indicating
+ *  that a test is in progress, or that an error has occured.
+ */
 
 uint8_t Compute_Software_State(uint8_t current_state)
 {

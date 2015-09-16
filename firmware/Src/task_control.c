@@ -1,13 +1,22 @@
-#include "stdio.h"
+/** \file task_control.c
+ *  \brief  This file contains the control task, and all of the functions used by the control task. 
+ *  \details Within this file is the control task. The purpose of the control task is to collect
+ *  sensor measurements for position and orientation, perform some filtering algorithm
+ *  upon those measurements to obtain estimates for the physical states of the system, and to 
+ *  operate on those state estimates with a control algorithm to produce a control signal for the motors.
+ *  The correct control and filter algorithms to be used are calculated in this file as well.
+ *  They can be specified by the user when the software state is in the "Manual" or "Test" states.  
+ */
 #include "stm32f4xx_hal.h"
+#include "stdio.h"
 #include "cmsis_os.h"
 #include "math.h"
 #include <math.h>
 #include <stdlib.h>
 
-#include "FreeRTOS.h"                       // Primary header for FreeRTOS
-#include "task.h"                           // Header for FreeRTOS task functions
-#include "queue.h"                          // FreeRTOS inter-task communication queues
+#include "FreeRTOS.h"                     
+#include "task.h"       
+#include "queue.h"       
 #include "croutine.h" 
 #include "semphr.h"
 
@@ -16,40 +25,49 @@
 #include "matrix.h"
 
 
+// Declare required peripheral handles here.
 extern I2C_HandleTypeDef hi2c1;
 extern UART_HandleTypeDef huart1;
 extern TIM_HandleTypeDef htim10;
 extern TIM_HandleTypeDef htim11;
 
-// Define globals and shared variables
+
+// Declare Global variables.
 volatile int32_t position_enc_0_SHARED;
 volatile int32_t position_enc_1_SHARED;
 volatile int32_t error_enc_0_SHARED;
 volatile int32_t error_enc_1_SHARED;
+
+float physical_states_SHARED[4] = {0.0};
+
+// Declare constants.
 static uint8_t gyro_reg_ctrl_1_setting = GYRO_REG_CTRL_1_SETTING;
 static uint8_t accl_reg_ctrl_1_setting = ACCL_REG_CTRL_1_SETTING;
-volatile float K_DER_SHARED =  .01;
-volatile float K_PROP_SHARED =  1.0;
-volatile float K_INT_SHARED = 0.0;
-volatile float DCM_ALPHA_SHARED = .1;
-volatile float TEST_MTRX_SHARED[2][2] = {1.0, 2.3, 0.0, 2.3};
-volatile float angle_offset_SHARED = 0.0;
-volatile int32_t control_select_SHARED = 0;
+
+// Define Global Adjustable Variables here.
+volatile float K_DER_SHARED =  .01; //PID
+volatile float K_PROP_SHARED =  1.0; //PID
+volatile float K_INT_SHARED = 0.0;  //PID
+volatile float DCM_ALPHA_SHARED = .1; //DCM
+volatile float TEST_MTRX_SHARED[2][2] = {1.0, 2.3, 0.0, 2.3}; //Not associated with any control laws
+volatile int32_t control_select_SHARED = 0; //
 volatile int32_t filter_select_SHARED = 0;
-float physical_states_SHARED[4] = {0.0};
+volatile float angle_offset_SHARED = 0.0;
+
+// Declare control and filter function dispatch tables here. 
 int16_t (*control_fxn_table[num_control_fxn])(float physical_states[4], float reference_input[4], uint8_t update_coefficients);
 void (*filter_fxn_table[num_filter_fxn])( float physical_states[4],int16_t *accl_data, int16_t *gyro_data, uint8_t update_coefficients);
 
 /** \fn task_control
- *  \brief Handles sensor data collection, fusion, selection of control & filter laws, and computation of control signal,
- *  based on the software state.
+ *  \brief Handles sensor data collection, fusion, selection of control & filter laws, and computation of control signal.
  */
 void task_control(void* pvParameters){
 	uint8_t default_control_prio = uxTaskPriorityGet(NULL);
 	portTickType xLastWakeTime;
     xLastWakeTime = xTaskGetTickCount();
 	
-	int16_t accl_data_buffer[3] = {0}; //X-1, Y-2, Z-3
+    // These arrays are the memory location where the raw data is stored.
+    int16_t accl_data_buffer[3] = {0}; //X-1, Y-2, Z-3
     int16_t gyro_data_buffer[3] = {0};
     
     // Store pointers to filter functions in the filter law dispatch table.
@@ -60,7 +78,7 @@ void task_control(void* pvParameters){
     control_fxn_table[PID_fixed] = PID_fix;
     control_fxn_table[PID_tuneable] = PID;
     control_fxn_table[no_power] = No_Pwr;
-    
+
     // The adjustable variable table is an array of structs, each struct in the array corresponding to
     // one of the adjustable variables. One of the fields of these structs is a pointer to the data -
     // here we map these pointers to the actual global variables.
@@ -92,34 +110,38 @@ void task_control(void* pvParameters){
     control_fxn control_law = no_power;
     filter_fxn filter_law = DCM_fixed;
     
+
     // Ordinarily when this variable is high, the main loop will update
     // all local copies of the global adjustable variables.
     uint8_t update_coefficients = 1; 
-    
+
     uint8_t n = 0, p = 0;
     int16_t common_motor_signal = 0;
-    int16_t diff_motor_signal = 0;
-    float reference_input[4] = {0};
+    int16_t diff_motor_signal = 0; // This will correspond to the turn signal.
+    float reference_input[4] = {0}; // Desired values of the physical states - an input from the user.
     
     // Initialize i2c interfaced gyro and accelerometer.
     gyro_init();
     accl_init();
     
-    // Make sure there are no free testing semaphores lying around, lest a test routine
-    // triggers unexpectedly.
+    // Make sure there are no free testing_semaphores lying around, lest a test routine
+    // triggers prematurely.
     xSemaphoreTake(testing_SEMAPHORE,0);
+
 
     // Main Loop of Control Task
     while(1){
 	
-         // Take Measurements. Mind you Encoders are constantly updating via interrupts.
+         // Take Measurements. Mind you Encoders are constantly updating via external interrupts.
          accl_measure(accl_data_buffer);
          gyro_measure(gyro_data_buffer);
    
          // Check to see if the local copies of global adjustable variables need to be updated
          xQueueReceive(update_coefficients_QUEUE, &update_coefficients, 0);
          
-         // Determine current software state, and possibly update user-requested filter and control laws.
+
+         // Determine software state. If the "update coeffients" flag is high, determine which
+         // control law the user wants to use. 
          taskENTER_CRITICAL(); 
              current_state = current_state_SHARED;
              if(update_coefficients){
@@ -132,7 +154,7 @@ void task_control(void* pvParameters){
          filter_law = filter_logic(current_state, user_filter_select);
          control_law = control_logic(current_state, user_control_select);
              
-         // execute the control and filter laws through their respective dipatch tables. This produces
+         // Execute the control and filter laws through their respective dipatch tables. This produces
          // the needed control signal for the motors.  
          (*filter_fxn_table[filter_law])(physical_states_SHARED,accl_data_buffer, gyro_data_buffer, update_coefficients);
          common_motor_signal = -(*control_fxn_table[control_law])(physical_states_SHARED, reference_input, update_coefficients);
@@ -151,6 +173,7 @@ void task_control(void* pvParameters){
              xQueueSend(control_sig_QUEUE, &common_motor_signal, 0);
          }
    
+        // Delay for a sample period.
         vTaskDelayUntil(&xLastWakeTime, SAMPLE_TIME_MS/portTICK_RATE_MS);
 	}
 }

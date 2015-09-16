@@ -26,79 +26,42 @@ Project File Date:  08/26/2015
 
 <h2>Output:</h2>
 Build target 'gsegv4 Configuration'
-compiling task_master.c...
+compiling task_control.c...
+..\Inc\task_control.h(76): warning:  #1-D: last line of file ends without a newline
+  filter_fxn filter_logic(uint8_t software_state, filter_fxn user_filter_select);
 ..\Inc\shares.h(110): warning:  #1-D: last line of file ends without a newline
   #endif
 ..\Inc\matrix.h(9): warning:  #1-D: last line of file ends without a newline
   float det_mtrx_2x2(float *m);
-..\Src\task_master.c(70): warning:  #167-D: argument of type "volatile uint8_t *" is incompatible with parameter of type "uint8_t *"
-      HAL_UART_Receive_IT(&huart1, packet_hdr, 1);
-..\Src\task_master.c(78): warning:  #188-D: enumerated type mixed with another type
-                current_state_SHARED = Compute_Software_State(current_state_SHARED); 
-..\Src\task_master.c(129): warning:  #167-D: argument of type "volatile uint8_t *" is incompatible with parameter of type "uint8_t *"
-                HAL_UART_Receive_IT(hUART, packet_payload, payload_length_SHARED);
-..\Src\task_master.c(138): warning:  #167-D: argument of type "volatile uint8_t *" is incompatible with parameter of type "uint8_t *"
-                HAL_UART_Receive_IT(hUART, packet_hdr, 1); // Start looking for the next valid packet header.
-..\Src\task_master.c(150): warning:  #167-D: argument of type "volatile uint8_t *" is incompatible with parameter of type "uint8_t *"
-            HAL_UART_Receive_IT(hUART, packet_hdr, 1); // Read another byte into the header buffer.
-..\Src\task_master.c(116): warning:  #177-D: variable "msg_length" was declared but never referenced
-          static uint8_t msg_length = 0;
-..\Src\task_master.c(196): warning:  #546-D: transfer of control bypasses initialization of:
-            variable "temp_fp" (declared at line 209)
-            variable "temp_u32p" (declared at line 226)
-            variable "temp_32p" (declared at line 242)
-      switch(variable_table[target_var_index].data_type)
-      ^
-..\Src\task_master.c(287): warning:  #144-D: a value of type "volatile void *" cannot be used to initialize an entity of type "float *"
-                  float *target_var_ptr_f = variable_table[target_var_index].data;
-..\Src\task_master.c(312): warning:  #144-D: a value of type "volatile void *" cannot be used to initialize an entity of type "uint32_t *"
-                  uint32_t *target_var_ptr_u32 = variable_table[target_var_index].data;
-..\Src\task_master.c(322): warning:  #144-D: a value of type "volatile void *" cannot be used to initialize an entity of type "int32_t *"
-                  int32_t *target_var_ptr_32 = variable_table[target_var_index].data;
-..\Src\task_master.c(332): warning:  #144-D: a value of type "volatile void *" cannot be used to initialize an entity of type "int16_t *"
-                  int16_t *target_var_ptr_16 = variable_table[target_var_index].data;
-..\Src\task_master.c(283): warning:  #546-D: transfer of control bypasses initialization of:
-            variable "target_var_ptr_f" (declared at line 287)
-            variable "target_var_ptr_u32" (declared at line 312)
-            variable "target_var_ptr_32" (declared at line 322)
-          switch(variable_table[target_var_index].data_type)
-          ^
-..\Src\task_master.c(346): warning:  #167-D: argument of type "volatile uint8_t *" is incompatible with parameter of type "uint8_t *"
-      uint16_t fletcher = Fletcher_16( packet_payload, payload_length_SHARED );
-..\Src\task_master.c(365): warning:  #167-D: argument of type "volatile uint8_t *" is incompatible with parameter of type "uint8_t *"
-          HAL_UART_Receive_IT(&huart1, packet_hdr, 1);
-..\Src\task_master.c(384): warning:  #167-D: argument of type "volatile uint8_t *" is incompatible with parameter of type "uint8_t *"
-                  if(!Update_Variable(packet_payload+PAYLOAD_DATA, packet_payload[PAYLOAD_INDEX], payload_data_size))
-..\Src\task_master.c(433): warning:  #188-D: enumerated type mixed with another type
-                      current_state_SHARED = packet_payload[PAYLOAD_DATA];
-..\Src\task_master.c(370): warning:  #546-D: transfer of control bypasses initialization of:
-            variable "payload_data_size" (declared at line 382)
-            variable "update" (declared at line 416)
-          switch(packet_payload[PAYLOAD_OPCODE])
-          ^
-..\Src\task_master.c(511): warning:  #1035-D: single-precision operand implicitly converted to double-precision
-                    else if( (abs((int32_t)physical_states_SHARED[ANGLE])<6) && (abs(physical_states_SHARED[ANGULAR_VELOCITY]*4.0)<1))
-..\Src\task_master.c(531): warning:  #111-D: statement is unreachable
-                    break; 
-..\Src\task_master.c(546): warning:  #111-D: statement is unreachable
-                    break; 
-..\Src\task_master.c(561): warning:  #111-D: statement is unreachable
-                    break; 
-..\Src\task_master.c(576): warning:  #111-D: statement is unreachable
-                    break;
-..\Src\task_master.c(581): warning:  #111-D: statement is unreachable
-                    break;
-..\Src\task_master.c(584): warning:  #111-D: statement is unreachable
-                    break;
-..\Src\task_master.c(588): warning:  #1-D: last line of file ends without a newline
-  }
-..\Src\task_master.c: 27 warnings, 0 errors
+..\Src\task_control.c(148): warning:  #188-D: enumerated type mixed with another type
+                       user_control_select = control_select_SHARED;
+..\Src\task_control.c(149): warning:  #188-D: enumerated type mixed with another type
+                       user_filter_select = filter_select_SHARED;
+..\Src\task_control.c(118): warning:  #177-D: variable "n" was declared but never referenced
+      uint8_t n = 0, p = 0;
+..\Src\task_control.c(118): warning:  #177-D: variable "p" was declared but never referenced
+      uint8_t n = 0, p = 0;
+..\Src\task_control.c(298): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+      const static float sample_time_sec = (SAMPLE_TIME_MS)/1000.0;
+..\Src\task_control.c(316): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+      physical_states[ANGLE] = alpha*(physical_states[ANGLE]-gyro_delta_angle)+ (1.0-alpha)*accl_pitch_angle;
+..\Src\task_control.c(322): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+      physical_states[VELOCITY] = (float)(position - position_prev)*(100.0)*RAD_PER_COUNT*WHEEL_RADIUS_METERS; //100 comes from 1/T, T being the sample time of .1 sec
+..\Src\task_control.c(340): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+      float sample_time_sec = (SAMPLE_TIME_MS)/1000.0;
+..\Src\task_control.c(361): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+      physical_states[ANGLE] = alpha*(physical_states[ANGLE]-gyro_delta_angle)+ (1.0-alpha)*accl_pitch_angle;
+..\Src\task_control.c(367): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+      physical_states[VELOCITY] = (float)(position - position_prev)*(100.0)*RAD_PER_COUNT*WHEEL_RADIUS_METERS; //100 comes from 1/T, T being the sample time of .1 sec
+..\Src\task_control.c(467): warning:  #550-D: variable "error_prev" was set but never used
+        static float error_prev = 0;
+..\Src\task_control.c: 14 warnings, 0 errors
 compiling freertos.c...
 linking...
 gsegv4 Configuration\gsegv4 Configuration.axf: Warning: L6304W: Duplicate input file gsegv4 configuration\freertos_1.o ignored.
 Program Size: Code=25184 RO-data=1072 RW-data=404 ZI-data=17172  
 Finished: 0 information, 1 warning and 0 error messages.
-"gsegv4 Configuration\gsegv4 Configuration.axf" - 0 Error(s), 28 Warning(s).
+"gsegv4 Configuration\gsegv4 Configuration.axf" - 0 Error(s), 15 Warning(s).
 
 <h2>Collection of Component include folders:</h2>
   C:\Users\jjfish\Documents\gitsandbox\ubalance\firmware\MDK-ARM\RTE
