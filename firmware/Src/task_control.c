@@ -15,52 +15,17 @@
 #include "shares.h"
 #include "matrix.h"
 
-#define GYRO_REG_CTRL_1_ADDR 0x20 // L3GD20 internal memory address of control register 1.
-                             // Change to 0xA0 for multiple write
-                             // cycles to subsequent control registers.
-#define GYRO_REG_CTRL_1_SETTING 0x0F // 95Hz ODR, 12.5Hz high pass cut-off, data enabled.
-#define GYRO_I2C_ADDR 0xD6
-#define GYRO_REG_DATA_ADDR 0xA8 // 0x28 for a single read. XL, XH, YL, YH, ZL, ZH.
-
-
-#define ACCL_REG_CTRL_1_ADDR 0x20 // LSM303DLHC internal memory address of control register 1.
-                             // Change to 0xA0 for multiple write
-                             // cycles to subsequent control registers.
-#define ACCL_REG_CTRL_1_SETTING 0x57 // 100Hz ODR, data enabled.
-#define ACCL_I2C_ADDR 0x32
-#define ACCL_REG_DATA_ADDR 0xA8 // 0x28 for a single read. XL, XH, YL, YH, ZL, ZH.
-#define X_INDEX 0
-#define Y_INDEX 1
-#define Z_INDEX 2
-
-#define PWM_PERIOD 10000
-#define MAX_POWER 1000
-
-#define ANGLE 0
-#define ANGULAR_VELOCITY 1
-#define POSITION 2
-#define VELOCITY 3
-
-#define X_AXIS 0
-#define Y_AXIS 1
-#define Z_AXIS 2
-
-#define RAD_PER_COUNT (0.0032724923F)
-#define WHEEL_RADIUS_METERS (0.0619125F)
-#define RADIAN_TO_DEGREES (57.3F)
-#define GYRO_DPS_PER_BIT (0.00875F)
-#define SAMPLE_TIME_MS (100.0F)
 
 extern I2C_HandleTypeDef hi2c1;
 extern UART_HandleTypeDef huart1;
 extern TIM_HandleTypeDef htim10;
 extern TIM_HandleTypeDef htim11;
 
+// Define globals and shared variables
 volatile int32_t position_enc_0_SHARED;
 volatile int32_t position_enc_1_SHARED;
 volatile int32_t error_enc_0_SHARED;
 volatile int32_t error_enc_1_SHARED;
-
 static uint8_t gyro_reg_ctrl_1_setting = GYRO_REG_CTRL_1_SETTING;
 static uint8_t accl_reg_ctrl_1_setting = ACCL_REG_CTRL_1_SETTING;
 volatile float K_DER_SHARED =  .01;
@@ -68,6 +33,7 @@ volatile float K_PROP_SHARED =  1.0;
 volatile float K_INT_SHARED = 0.0;
 volatile float DCM_ALPHA_SHARED = .1;
 volatile float TEST_MTRX_SHARED[2][2] = {1.0, 2.3, 0.0, 2.3};
+volatile float angle_offset_SHARED = 0.0;
 volatile int32_t control_select_SHARED = 0;
 volatile int32_t filter_select_SHARED = 0;
 float physical_states_SHARED[4] = {0.0};
@@ -86,16 +52,18 @@ void task_control(void* pvParameters){
 	int16_t accl_data_buffer[3] = {0}; //X-1, Y-2, Z-3
     int16_t gyro_data_buffer[3] = {0};
     
-    // Map all filter functions into their proper places within the filter law dispatch table
+    // Store pointers to filter functions in the filter law dispatch table.
     filter_fxn_table[DCM_fixed] = DCM_fix;
     filter_fxn_table[DCM_tuneable] = DCM;
    
-    // Map all control functions into their proper places within the control law dispatch table.
+    // Store pointers to control functions in the control law dispatch table.
     control_fxn_table[PID_fixed] = PID_fix;
     control_fxn_table[PID_tuneable] = PID;
     control_fxn_table[no_power] = No_Pwr;
     
-    // Assign pointers to all "adjustable_variables" in the adjustable variable table.
+    // The adjustable variable table is an array of structs, each struct in the array corresponding to
+    // one of the adjustable variables. One of the fields of these structs is a pointer to the data -
+    // here we map these pointers to the actual global variables.
     variable_table[k_proportional].data = &K_PROP_SHARED;
     variable_table[k_derivative].data = &K_DER_SHARED;
     variable_table[k_integral].data = &K_INT_SHARED;
@@ -103,6 +71,7 @@ void task_control(void* pvParameters){
     variable_table[control_select].data = &control_select_SHARED;
     variable_table[filter_select].data = &filter_select_SHARED;
     variable_table[test_matrix].data = &TEST_MTRX_SHARED[0][0];
+    variable_table[angle_offset].data = &angle_offset_SHARED;
     
     // Initialize encoder position to zero.
     position_enc_0_SHARED = 0;
@@ -116,15 +85,17 @@ void task_control(void* pvParameters){
     software_state current_state = reset;
     
     // Initialize the user-selected control and filter laws.
-    control_fxn user_control_select = PID;
-    filter_fxn user_filter_select = DCM;
+    control_fxn user_control_select = PID_tuneable;
+    filter_fxn user_filter_select = DCM_tuneable;
     
     // Initialize the start-up control and filter laws.
     control_fxn control_law = no_power;
     filter_fxn filter_law = DCM_fixed;
     
-    uint8_t update_coefficients = 1; // Ordinarily when this variable is high, the main loop will update
-                                     // all local copies of the global adjustable variables. 
+    // Ordinarily when this variable is high, the main loop will update
+    // all local copies of the global adjustable variables.
+    uint8_t update_coefficients = 1; 
+    
     uint8_t n = 0, p = 0;
     int16_t common_motor_signal = 0;
     int16_t diff_motor_signal = 0;
@@ -138,7 +109,7 @@ void task_control(void* pvParameters){
     // triggers unexpectedly.
     xSemaphoreTake(testing_SEMAPHORE,0);
 
-    // Main Loop
+    // Main Loop of Control Task
     while(1){
 	
          // Take Measurements. Mind you Encoders are constantly updating via interrupts.
@@ -148,7 +119,7 @@ void task_control(void* pvParameters){
          // Check to see if the local copies of global adjustable variables need to be updated
          xQueueReceive(update_coefficients_QUEUE, &update_coefficients, 0);
          
-         // Perform filter and control law computation
+         // Determine current software state, and possibly update user-requested filter and control laws.
          taskENTER_CRITICAL(); 
              current_state = current_state_SHARED;
              if(update_coefficients){
@@ -165,6 +136,7 @@ void task_control(void* pvParameters){
          // the needed control signal for the motors.  
          (*filter_fxn_table[filter_law])(physical_states_SHARED,accl_data_buffer, gyro_data_buffer, update_coefficients);
          common_motor_signal = -(*control_fxn_table[control_law])(physical_states_SHARED, reference_input, update_coefficients);
+         
          // Reset "update_coefficients" variable, so that coeff's don't update until the next time a request
          // is processed through the queue
          update_coefficients = 0;
@@ -398,6 +370,7 @@ int16_t PID(float physical_states[4], float reference_input[4], uint8_t update_c
     static float K_INT = 0;
     static float K_PROP =  1.0;
     static float K_DER = .01;
+    static float offset = 0.0;
     const static int16_t OUT_CLAMP = 1000;
     const static float INT_CLAMP = 100;
     float error;
@@ -411,12 +384,13 @@ int16_t PID(float physical_states[4], float reference_input[4], uint8_t update_c
             K_PROP = K_PROP_SHARED;
             K_DER = K_DER_SHARED;
             K_INT = K_INT_SHARED;
+            offset = angle_offset_SHARED;
         taskEXIT_CRITICAL();
         printf("\n\r Coefficients updated \n\r");
         integrator_out_prev = 0;
     }
 	
-	error = reference_input[ANGLE] - physical_states[ANGLE];//FOR THE LOVE OF GOD DELETE THIS SHIT!!! FIX THE 4.17 BUGGG!!!
+	error = reference_input[ANGLE] - physical_states[ANGLE] + offset;
 	///////////////////////////////////////
 	// Proportional Term Calculation
 	proportional_out = K_PROP*error;
@@ -477,8 +451,16 @@ int16_t PID_fix(float physical_states[4], float reference_input[4], uint8_t upda
 	float derivative_out;
 	float proportional_out;
 	float integrator_out;
+    float static offset = 0.0;
+
+    if(update_coefficients){
+        taskENTER_CRITICAL();
+            offset = angle_offset_SHARED;
+        taskEXIT_CRITICAL();
+    }
+        
+	error = reference_input[ANGLE] - physical_states[ANGLE] + offset;
     
-	error = reference_input[ANGLE] - physical_states[ANGLE];
 	///////////////////////////////////////
 	// Proportional Term Calculation
 	proportional_out = K_PROP*error;

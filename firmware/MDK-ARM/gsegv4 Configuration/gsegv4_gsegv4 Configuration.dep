@@ -46,8 +46,8 @@ I (..\Middlewares\Third_Party\FreeRTOS\Source\include\timers.h)(0x54CEFF16)
 I (..\Middlewares\Third_Party\FreeRTOS\Source\include\queue.h)(0x54CEFF16)
 I (..\Middlewares\Third_Party\FreeRTOS\Source\include\semphr.h)(0x54CEFF16)
 I (..\Middlewares\Third_Party\FreeRTOS\Source\include\event_groups.h)(0x54CEFF16)
-I (..\Inc\task_master.h)(0x55E9BF18)
-I (..\Inc\shares.h)(0x55DF6338)
+I (..\Inc\task_master.h)(0x55F7AA97)
+I (..\Inc\shares.h)(0x55F7AE5E)
 F (..\Src\stm32f4xx_hal_msp.c)(0x553BE684)(-c --cpu Cortex-M4.fp -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I..\Inc -I..\Drivers\STM32F4xx_HAL_Driver\Inc -I..\Drivers\STM32F4xx_HAL_Driver\Inc\Legacy -I..\Middlewares\Third_Party\FreeRTOS\Source\portable\RVDS\ARM_CM4F -I..\Middlewares\Third_Party\FreeRTOS\Source\include -I..\Middlewares\Third_Party\FreeRTOS\Source\CMSIS_RTOS -I..\Drivers\CMSIS\Include -I..\Drivers\CMSIS\Device\ST\STM32F4xx\Include --C99-I C:\Users\jjfish\Documents\gitsandbox\ubalance\firmware\MDK-ARM\RTE-I C:\Keil_v5\ARM\PACK\Keil\STM32F4xx_DFP\2.3.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-I C:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="513" -DSTM32F401xE -DUSE_HAL_DRIVER -DSTM32F401xE-o "gsegv4 configuration\stm32f4xx_hal_msp.o" --omf_browse "gsegv4 configuration\stm32f4xx_hal_msp.crf" --depend "gsegv4 configuration\stm32f4xx_hal_msp.d")
 I (..\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal.h)(0x54CEFF14)
 I (..\Inc\stm32f4xx_hal_conf.h)(0x553BE684)
@@ -128,10 +128,10 @@ I (..\Middlewares\Third_Party\FreeRTOS\Source\include\queue.h)(0x54CEFF16)
 I (..\Middlewares\Third_Party\FreeRTOS\Source\include\semphr.h)(0x54CEFF16)
 I (..\Middlewares\Third_Party\FreeRTOS\Source\include\event_groups.h)(0x54CEFF16)
 I (..\Middlewares\Third_Party\FreeRTOS\Source\include\croutine.h)(0x54CEFF16)
-I (..\Inc\shares.h)(0x55DF6338)
+I (..\Inc\shares.h)(0x55F7AE5E)
 I (..\Inc\task_safety.h)(0x555CF51A)
-I (..\Inc\task_master.h)(0x55E9BF18)
-I (..\Inc\task_control.h)(0x55DF5C9A)
+I (..\Inc\task_master.h)(0x55F7AA97)
+I (..\Inc\task_control.h)(0x55F7A868)
 I (..\Inc\task_test.h)(0x55DE7248)
 F (..\Src\freertos.c)(0x553BE680)(-c --cpu Cortex-M4.fp -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I..\Inc -I..\Drivers\STM32F4xx_HAL_Driver\Inc -I..\Drivers\STM32F4xx_HAL_Driver\Inc\Legacy -I..\Middlewares\Third_Party\FreeRTOS\Source\portable\RVDS\ARM_CM4F -I..\Middlewares\Third_Party\FreeRTOS\Source\include -I..\Middlewares\Third_Party\FreeRTOS\Source\CMSIS_RTOS -I..\Drivers\CMSIS\Include -I..\Drivers\CMSIS\Device\ST\STM32F4xx\Include --C99-I C:\Users\jjfish\Documents\gitsandbox\ubalance\firmware\MDK-ARM\RTE-I C:\Keil_v5\ARM\PACK\Keil\STM32F4xx_DFP\2.3.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-I C:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="513" -DSTM32F401xE -DUSE_HAL_DRIVER -DSTM32F401xE-o "gsegv4 configuration\freertos_1.o" --omf_browse "gsegv4 configuration\freertos_1.crf" --depend "gsegv4 configuration\freertos_1.d")
 I (..\Middlewares\Third_Party\FreeRTOS\Source\include\FreeRTOS.h)(0x54CEFF16)
@@ -907,7 +907,7 @@ I (..\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal_tim.h)(0x54CEFF14)
 I (..\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal_tim_ex.h)(0x54CEFF14)
 I (..\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal_uart.h)(0x54CEFF14)
 F (..\Inc\task_safety.h)(0x555CF51A)()
-F (..\Src\task_safety.c)(0x55873954)(-c --cpu Cortex-M4.fp -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I..\Inc -I..\Drivers\STM32F4xx_HAL_Driver\Inc -I..\Drivers\STM32F4xx_HAL_Driver\Inc\Legacy -I..\Middlewares\Third_Party\FreeRTOS\Source\portable\RVDS\ARM_CM4F -I..\Middlewares\Third_Party\FreeRTOS\Source\include -I..\Middlewares\Third_Party\FreeRTOS\Source\CMSIS_RTOS -I..\Drivers\CMSIS\Include -I..\Drivers\CMSIS\Device\ST\STM32F4xx\Include --C99-I C:\Users\jjfish\Documents\gitsandbox\ubalance\firmware\MDK-ARM\RTE-I C:\Keil_v5\ARM\PACK\Keil\STM32F4xx_DFP\2.3.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-I C:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="513" -DSTM32F401xE -DUSE_HAL_DRIVER -DSTM32F401xE-o "gsegv4 configuration\task_safety.o" --omf_browse "gsegv4 configuration\task_safety.crf" --depend "gsegv4 configuration\task_safety.d")
+F (..\Src\task_safety.c)(0x55EC9E3F)(-c --cpu Cortex-M4.fp -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I..\Inc -I..\Drivers\STM32F4xx_HAL_Driver\Inc -I..\Drivers\STM32F4xx_HAL_Driver\Inc\Legacy -I..\Middlewares\Third_Party\FreeRTOS\Source\portable\RVDS\ARM_CM4F -I..\Middlewares\Third_Party\FreeRTOS\Source\include -I..\Middlewares\Third_Party\FreeRTOS\Source\CMSIS_RTOS -I..\Drivers\CMSIS\Include -I..\Drivers\CMSIS\Device\ST\STM32F4xx\Include --C99-I C:\Users\jjfish\Documents\gitsandbox\ubalance\firmware\MDK-ARM\RTE-I C:\Keil_v5\ARM\PACK\Keil\STM32F4xx_DFP\2.3.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-I C:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="513" -DSTM32F401xE -DUSE_HAL_DRIVER -DSTM32F401xE-o "gsegv4 configuration\task_safety.o" --omf_browse "gsegv4 configuration\task_safety.crf" --depend "gsegv4 configuration\task_safety.d")
 I (C:\Keil_v5\ARM\ARMCC\include\math.h)(0x5476E20E)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x5476E210)
 I (C:\Keil_v5\ARM\ARMCC\include\stdio.h)(0x5476E210)
@@ -958,8 +958,8 @@ I (..\Middlewares\Third_Party\FreeRTOS\Source\include\semphr.h)(0x54CEFF16)
 I (..\Middlewares\Third_Party\FreeRTOS\Source\include\event_groups.h)(0x54CEFF16)
 I (..\Inc\task_safety.h)(0x555CF51A)
 I (..\Middlewares\Third_Party\FreeRTOS\Source\include\croutine.h)(0x54CEFF16)
-I (..\Inc\shares.h)(0x55DF6338)
-F (..\Src\task_master.c)(0x55E9BF18)(-c --cpu Cortex-M4.fp -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I..\Inc -I..\Drivers\STM32F4xx_HAL_Driver\Inc -I..\Drivers\STM32F4xx_HAL_Driver\Inc\Legacy -I..\Middlewares\Third_Party\FreeRTOS\Source\portable\RVDS\ARM_CM4F -I..\Middlewares\Third_Party\FreeRTOS\Source\include -I..\Middlewares\Third_Party\FreeRTOS\Source\CMSIS_RTOS -I..\Drivers\CMSIS\Include -I..\Drivers\CMSIS\Device\ST\STM32F4xx\Include --C99-I C:\Users\jjfish\Documents\gitsandbox\ubalance\firmware\MDK-ARM\RTE-I C:\Keil_v5\ARM\PACK\Keil\STM32F4xx_DFP\2.3.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-I C:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="513" -DSTM32F401xE -DUSE_HAL_DRIVER -DSTM32F401xE-o "gsegv4 configuration\task_master.o" --omf_browse "gsegv4 configuration\task_master.crf" --depend "gsegv4 configuration\task_master.d")
+I (..\Inc\shares.h)(0x55F7AE5E)
+F (..\Src\task_master.c)(0x55F8C2EA)(-c --cpu Cortex-M4.fp -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I..\Inc -I..\Drivers\STM32F4xx_HAL_Driver\Inc -I..\Drivers\STM32F4xx_HAL_Driver\Inc\Legacy -I..\Middlewares\Third_Party\FreeRTOS\Source\portable\RVDS\ARM_CM4F -I..\Middlewares\Third_Party\FreeRTOS\Source\include -I..\Middlewares\Third_Party\FreeRTOS\Source\CMSIS_RTOS -I..\Drivers\CMSIS\Include -I..\Drivers\CMSIS\Device\ST\STM32F4xx\Include --C99-I C:\Users\jjfish\Documents\gitsandbox\ubalance\firmware\MDK-ARM\RTE-I C:\Keil_v5\ARM\PACK\Keil\STM32F4xx_DFP\2.3.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-I C:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="513" -DSTM32F401xE -DUSE_HAL_DRIVER -DSTM32F401xE-o "gsegv4 configuration\task_master.o" --omf_browse "gsegv4 configuration\task_master.crf" --depend "gsegv4 configuration\task_master.d")
 I (C:\Keil_v5\ARM\ARMCC\include\stdio.h)(0x5476E210)
 I (C:\Keil_v5\ARM\ARMCC\include\math.h)(0x5476E20E)
 I (..\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal.h)(0x54CEFF14)
@@ -1009,11 +1009,11 @@ I (..\Middlewares\Third_Party\FreeRTOS\Source\include\semphr.h)(0x54CEFF16)
 I (..\Middlewares\Third_Party\FreeRTOS\Source\include\event_groups.h)(0x54CEFF16)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x5476E210)
 I (..\Middlewares\Third_Party\FreeRTOS\Source\include\croutine.h)(0x54CEFF16)
-I (..\Inc\shares.h)(0x55DF6338)
-I (..\Inc\task_master.h)(0x55E9BF18)
+I (..\Inc\shares.h)(0x55F7AE5E)
+I (..\Inc\task_master.h)(0x55F7AA97)
 I (..\Inc\matrix.h)(0x55D6E670)
-F (..\Inc\task_master.h)(0x55E9BF18)()
-F (..\Src\task_control.c)(0x55DF78F6)(-c --cpu Cortex-M4.fp -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I..\Inc -I..\Drivers\STM32F4xx_HAL_Driver\Inc -I..\Drivers\STM32F4xx_HAL_Driver\Inc\Legacy -I..\Middlewares\Third_Party\FreeRTOS\Source\portable\RVDS\ARM_CM4F -I..\Middlewares\Third_Party\FreeRTOS\Source\include -I..\Middlewares\Third_Party\FreeRTOS\Source\CMSIS_RTOS -I..\Drivers\CMSIS\Include -I..\Drivers\CMSIS\Device\ST\STM32F4xx\Include --C99-I C:\Users\jjfish\Documents\gitsandbox\ubalance\firmware\MDK-ARM\RTE-I C:\Keil_v5\ARM\PACK\Keil\STM32F4xx_DFP\2.3.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-I C:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="513" -DSTM32F401xE -DUSE_HAL_DRIVER -DSTM32F401xE-o "gsegv4 configuration\task_control.o" --omf_browse "gsegv4 configuration\task_control.crf" --depend "gsegv4 configuration\task_control.d")
+F (..\Inc\task_master.h)(0x55F7AA97)()
+F (..\Src\task_control.c)(0x55F7B018)(-c --cpu Cortex-M4.fp -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I..\Inc -I..\Drivers\STM32F4xx_HAL_Driver\Inc -I..\Drivers\STM32F4xx_HAL_Driver\Inc\Legacy -I..\Middlewares\Third_Party\FreeRTOS\Source\portable\RVDS\ARM_CM4F -I..\Middlewares\Third_Party\FreeRTOS\Source\include -I..\Middlewares\Third_Party\FreeRTOS\Source\CMSIS_RTOS -I..\Drivers\CMSIS\Include -I..\Drivers\CMSIS\Device\ST\STM32F4xx\Include --C99-I C:\Users\jjfish\Documents\gitsandbox\ubalance\firmware\MDK-ARM\RTE-I C:\Keil_v5\ARM\PACK\Keil\STM32F4xx_DFP\2.3.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-I C:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="513" -DSTM32F401xE -DUSE_HAL_DRIVER -DSTM32F401xE-o "gsegv4 configuration\task_control.o" --omf_browse "gsegv4 configuration\task_control.crf" --depend "gsegv4 configuration\task_control.d")
 I (C:\Keil_v5\ARM\ARMCC\include\stdio.h)(0x5476E210)
 I (..\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal.h)(0x54CEFF14)
 I (..\Inc\stm32f4xx_hal_conf.h)(0x553BE684)
@@ -1063,11 +1063,11 @@ I (..\Middlewares\Third_Party\FreeRTOS\Source\include\event_groups.h)(0x54CEFF16
 I (C:\Keil_v5\ARM\ARMCC\include\math.h)(0x5476E20E)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x5476E210)
 I (..\Middlewares\Third_Party\FreeRTOS\Source\include\croutine.h)(0x54CEFF16)
-I (..\Inc\task_control.h)(0x55DF5C9A)
-I (..\Inc\shares.h)(0x55DF6338)
+I (..\Inc\task_control.h)(0x55F7A868)
+I (..\Inc\shares.h)(0x55F7AE5E)
 I (..\Inc\matrix.h)(0x55D6E670)
-F (..\Inc\task_control.h)(0x55DF5C9A)()
-F (..\Inc\shares.h)(0x55DF6338)()
+F (..\Inc\task_control.h)(0x55F7A868)()
+F (..\Inc\shares.h)(0x55F7AE5E)()
 F (..\Src\matrix.c)(0x55D6E670)(-c --cpu Cortex-M4.fp -D__EVAL -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I..\Inc -I..\Drivers\STM32F4xx_HAL_Driver\Inc -I..\Drivers\STM32F4xx_HAL_Driver\Inc\Legacy -I..\Middlewares\Third_Party\FreeRTOS\Source\portable\RVDS\ARM_CM4F -I..\Middlewares\Third_Party\FreeRTOS\Source\include -I..\Middlewares\Third_Party\FreeRTOS\Source\CMSIS_RTOS -I..\Drivers\CMSIS\Include -I..\Drivers\CMSIS\Device\ST\STM32F4xx\Include --C99-I C:\Users\jjfish\Documents\gitsandbox\ubalance\firmware\MDK-ARM\RTE-I C:\Keil_v5\ARM\PACK\Keil\STM32F4xx_DFP\2.3.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include-I C:\Keil_v5\ARM\CMSIS\Include-D__UVISION_VERSION="513" -DSTM32F401xE -DUSE_HAL_DRIVER -DSTM32F401xE-o "gsegv4 configuration\matrix.o" --omf_browse "gsegv4 configuration\matrix.crf" --depend "gsegv4 configuration\matrix.d")
 I (C:\Keil_v5\ARM\ARMCC\include\math.h)(0x5476E20E)
 I (C:\Keil_v5\ARM\ARMCC\include\stdlib.h)(0x5476E210)
@@ -1181,4 +1181,4 @@ I (..\Middlewares\Third_Party\FreeRTOS\Source\include\semphr.h)(0x54CEFF16)
 I (..\Middlewares\Third_Party\FreeRTOS\Source\include\event_groups.h)(0x54CEFF16)
 I (..\Inc\task_test.h)(0x55DE7248)
 I (..\Middlewares\Third_Party\FreeRTOS\Source\include\croutine.h)(0x54CEFF16)
-I (..\Inc\shares.h)(0x55DF6338)
+I (..\Inc\shares.h)(0x55F7AE5E)

@@ -5,6 +5,8 @@
 #define PACKET_LENGTH 0
 #define PAYLOAD_INDEX 1
 #define PAYLOAD_DATA 2
+#define ANGLE 0
+#define ANGULAR_VELOCITY 1
 
 void task_master(void* pvParameters);
 void my_HAL_UART_RxCpltCallback(UART_HandleTypeDef *hUART);

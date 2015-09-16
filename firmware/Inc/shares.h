@@ -19,17 +19,6 @@ typedef enum software_state{
     error = 4
 }software_state;
 
-typedef enum adj_variable_index{
-    k_proportional,
-    k_derivative,
-    k_integral ,
-    dcm_alpha,
-    control_select,
-    filter_select,
-    test_matrix,
-    number_of_vars
-}adj_variable_index;
-
 typedef enum type{
     float_type = 0,
     uint32_t_type = 1,
@@ -71,8 +60,19 @@ WHEN CREATING A NEW ADJUSTABLE VARIABLE!!!
         Consider writing this code into some sort of Update Variables subroutine. 
     6 - Declare the variable with "_SHARED" appended to the name in the shares.h file 
     (hint: this one)
-
 */
+typedef enum adj_variable_index{
+    k_proportional,
+    k_derivative,
+    k_integral ,
+    dcm_alpha,
+    control_select,
+    filter_select,
+    test_matrix,
+    angle_offset,
+    number_of_vars
+}adj_variable_index;
+
 typedef struct adjustable_variable {
   char* namestring; 
   adj_variable_index index;
@@ -98,6 +98,7 @@ extern error_code error_code_SHARED;                 //defined in task_master
 extern uint8_t test_in_progress_SHARED;              //defined in task_master
 extern volatile int32_t control_select_SHARED;
 extern volatile int32_t filter_select_SHARED;
+extern volatile float angle_offset_SHARED;
 
 
 extern xQueueHandle update_coefficients_QUEUE;        //defined in task_control

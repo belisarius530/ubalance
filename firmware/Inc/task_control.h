@@ -1,3 +1,39 @@
+#define GYRO_REG_CTRL_1_ADDR 0x20 // L3GD20 internal memory address of control register 1.
+                             // Change to 0xA0 for multiple write
+                             // cycles to subsequent control registers.
+#define GYRO_REG_CTRL_1_SETTING 0x0F // 95Hz ODR, 12.5Hz high pass cut-off, data enabled.
+#define GYRO_I2C_ADDR 0xD6
+#define GYRO_REG_DATA_ADDR 0xA8 // 0x28 for a single read. XL, XH, YL, YH, ZL, ZH.
+
+
+#define ACCL_REG_CTRL_1_ADDR 0x20 // LSM303DLHC internal memory address of control register 1.
+                             // Change to 0xA0 for multiple write
+                             // cycles to subsequent control registers.
+#define ACCL_REG_CTRL_1_SETTING 0x57 // 100Hz ODR, data enabled.
+#define ACCL_I2C_ADDR 0x32
+#define ACCL_REG_DATA_ADDR 0xA8 // 0x28 for a single read. XL, XH, YL, YH, ZL, ZH.
+#define X_INDEX 0
+#define Y_INDEX 1
+#define Z_INDEX 2
+
+#define PWM_PERIOD 10000
+#define MAX_POWER 1000
+
+#define ANGLE 0
+#define ANGULAR_VELOCITY 1
+#define POSITION 2
+#define VELOCITY 3
+
+#define X_AXIS 0
+#define Y_AXIS 1
+#define Z_AXIS 2
+
+#define RAD_PER_COUNT (0.0032724923F)
+#define WHEEL_RADIUS_METERS (0.0619125F)
+#define RADIAN_TO_DEGREES (57.3F)
+#define GYRO_DPS_PER_BIT (0.00875F)
+#define SAMPLE_TIME_MS (100.0F)
+
 void task_control(void* pvParameters);
 void accl_init(void);
 void gyro_init(void);

@@ -49,7 +49,11 @@ volatile adjustable_variable variable_table[number_of_vars] = {
        
        // This is a test matrix used to verify that the matrix update, report, and
        // math functions work properly.
-       {"test_matrix",      test_matrix,    NULL,      matrix_2x2,  float_type}
+       {"test_matrix",      test_matrix,    NULL,  matrix_2x2,      float_type},
+       
+       // This is a test matrix used to verify that the matrix update, report, and
+       // math functions work properly.
+       {"angle_offset",     angle_offset,   NULL,  single_element,  float_type}
 
     };
 
@@ -504,7 +508,7 @@ uint8_t Compute_Software_State(uint8_t current_state)
                   {
                       return error;
                   }
-                  if(abs((int32_t)physical_states_SHARED[0])<5)
+                  else if( (abs((int32_t)physical_states_SHARED[ANGLE])<6) && (abs(physical_states_SHARED[ANGULAR_VELOCITY]*4.0)<1))
                   {
                       reset_count++;
                   }
@@ -512,9 +516,13 @@ uint8_t Compute_Software_State(uint8_t current_state)
                   {
                       reset_count =0;
                   }
+                  
                   if (reset_count>300)
                   {
+                      angle_offset_SHARED = physical_states_SHARED[ANGLE];
+                      reset_count = 0;
                       return stabilize;
+                      
                   }
                   else
                   {                 
